@@ -33,7 +33,7 @@ services:
       context: ./bot_service/
       dockerfile: ./dockerfiles/dev_ui.Dockerfile
     env_file:
-      - ./bot_service/src/frontend/.env
+      - ./bot_service/src/frontend/etc/.env
     volumes:
       - ./common:/app/common
     ports:
