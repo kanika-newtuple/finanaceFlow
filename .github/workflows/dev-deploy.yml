@@ -24,9 +24,11 @@ jobs:
           host: ${{ secrets.HOST_DEV }}
           username: ${{ secrets.USERNAME_DEV }}
           key: ${{ secrets.SSH_KEY_DEV }}
+          env: 
+            REPO_PATH_DEV: ${{ env.REPO_PATH_DEV }}
           script: |
             echo "Starting DEV deployment.."
-            cd ${{ env.REPO_PATH_DEV }}
+            cd ${REPO_PATH_DEV }
             ./deploy.sh fetch_latest_changes main
 
   build_deploy:
