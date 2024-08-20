@@ -20,11 +20,12 @@ jobs:
     steps:
       - name: Fetch latest changes
         uses: appleboy/ssh-action@v1.0.3
+        env:
+          REPO_PATH_DEV: ${{ secrets.REPO_PATH_DEV }}
         with:
           host: ${{ secrets.HOST_DEV }}
           username: ${{ secrets.USERNAME_DEV }}
           key: ${{ secrets.SSH_KEY_DEV }}
-          REPO_PATH_DEV: ${{ env.REPO_PATH_DEV }}
           script: |
             echo "Starting DEV deployment.."
             cd /opt/demos/fantastic-fiesta
@@ -36,13 +37,15 @@ jobs:
     steps:
       - name: Build docker containers
         uses: appleboy/ssh-action@v1.0.3
+        env:
+          REPO_PATH_DEV: ${{ secrets.REPO_PATH_DEV }}
         with:
           host: ${{ secrets.HOST_DEV }}
           username: ${{ secrets.USERNAME_DEV }}
           key: ${{ secrets.SSH_KEY_DEV }}
           script: |
             echo "Starting DEV deployment build.."
-            cd ${{ env.REPO_PATH_DEV }}
+            cd $REPO_PATH_DEV
             ./deploy.sh deploy_ci main
     
   health_checks:
