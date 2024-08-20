@@ -27,7 +27,7 @@ jobs:
           REPO_PATH_DEV: ${{ env.REPO_PATH_DEV }}
           script: |
             echo "Starting DEV deployment.."
-            cd $REPO_PATH_DEV
+            cd /opt/demos/fantastic-fiesta
             ./deploy.sh fetch_latest_changes main
 
   build_deploy:
