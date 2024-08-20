@@ -6,10 +6,10 @@ services:
     image: bot-api-service:dev
     container_name: bot-api-service-dev
     build:
-      context: ./src/
-      dockerfile: ../dockerfiles/dev_api.Dockerfile
+      context: ./bot_service/
+      dockerfile: ./dockerfiles/dev_api.Dockerfile
     env_file:
-        - ./src/backend/etc/.env
+        - ./bot_service/src/backend/etc/.env
     volumes:
       - ./common:/app/common
     healthcheck:
@@ -30,10 +30,10 @@ services:
     image: bot-ui-service:dev
     container_name: bot-ui-service-dev
     build:
-      context: ./src/
-      dockerfile: ../dockerfiles/dev_ui.Dockerfile
+      context: ./bot_service/
+      dockerfile: ./dockerfiles/dev_ui.Dockerfile
     env_file:
-      - ./src/frontend/.env
+      - ./bot_service/src/frontend/.env
     volumes:
       - ./common:/app/common
     ports:

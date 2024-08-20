@@ -17,6 +17,7 @@
 where *Host* is the IP address on the vm, *username* is the user which can ssh into the vm, *ssh_key* is private ssh key for same user and repo_path is the full path to the repo on the vm
 
 ## Some things to be taken care of
+>- The repo needs to be cloned intially on the vm with all `.env` files being created
 >- The **main** branch is development env, the **prod** branch is for production env, any code that is pushed/merged into branches triggers respective env deployment however this behavour is configurable
 >- Make sure that ports in health check job for github actions are updated to get accurate health status upon deployment
 >- Update the docker & docker compose file as per needed in main & prod versions, and add any common service in `docker-compose-services.yml`, 
