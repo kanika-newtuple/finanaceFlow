@@ -1,0 +1,76 @@
+version: "3.6"
+services:
+  # bot-service:
+  #   image: bot-service:prod
+  #   container_name: bot-service-prod
+  #   build:
+  #     context: ./bot_service/src/backend
+  #     dockerfile: ./bot_service/dockerfiles/prod_ui.Dockerfile
+  #   env_file:
+  #     - ./bot_service/src/etc/.env
+  #   environment:
+  #     APPLICATION_NAME: "bot_service"
+  #     CHAINLIT_HOST: 0.0.0.0
+  #     CHAINLIT_PORT: 8080
+  #     WATCH: True
+  #   volumes:
+  #     - ./vector_store:/app/vector_store
+  #   ports:
+  #     - 8000:8080
+  #   networks:
+  #     - llm-network
+  #   dns:
+  #     - 8.8.8.8
+  #   restart: "unless-stopped"
+
+  # Uncomment while implementing APIs
+  bot-api-service:
+    image: bot-api-service:prod
+    container_name: bot-api-service-prod
+    build:
+      context: ./bot_service/src/backend
+      dockerfile: ./bot_service/dockerfiles/prod_api.Dockerfile
+    env_file:
+        - ./bot_service/src/backend/etc/.env
+    volumes:
+      - ./vector_store:/app/vector_store
+      - ./common/password_creds.json:/app/etc/password_creds.json
+      - ./common/DOC_HARVEST_RULE.xlsx:/app/etc/DOC_HARVEST_RULE.xlsx
+    healthcheck:
+      test: curl --fail http://localhost:8081/api/health || exit 1
+      interval: 40s
+      timeout: 30s
+      retries: 3
+      start_period: 60s
+
+    ports:
+      - 8081:8081
+    networks:
+      - llm-network
+    dns:
+      - 8.8.8.8
+    restart: "unless-stopped"
+
+  # UI service
+  bot-ui-service:
+    image: bot-ui-service:prod
+    container_name: bot-ui-service-prod
+    build:
+      context: ./bot_service/
+      dockerfile: dockerfiles/prod_ui.Dockerfile
+    env_file:
+      - ./bot_service/src/frontend/.env
+    volumes:
+      - ./common/password_creds.json:/app/src/app/components/common/password_creds.json
+    ports:
+       - "3002:3000"
+    networks:
+      - llm-network
+    dns:
+      - 8.8.8.8
+    restart: "unless-stopped"
+    command: ["serve", "-s", "build", "-l", "3000"]
+
+networks:
+  llm-network:
+    external: true

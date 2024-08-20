@@ -1,0 +1,77 @@
+name: Build and Deploy - PROD
+on:
+  push:
+    branches:
+      - prod
+
+  workflow_dispatch:
+
+jobs:
+  init_job:
+    runs-on: ubuntu-latest
+    steps:
+      - name: prod_deploy
+        run: echo "prod here"
+
+
+  # fetch_latest_changes:
+  #   runs-on: ubuntu-latest
+  #   needs: init_job
+  #   steps:
+  #     - name: Fetch latest changes
+  #     uses: appleboy/ssh-action@v1.0.3
+  #     with:
+  #       host: ${{ secrets.HOST_PROD }}
+  #       username: ${{ secrets.USERNAME_PROD }}
+  #       key: ${{ secrets.SSH_KEY_PROD }}
+  #       script: |
+  #         echo "Starting PROD deployment.."
+  #         cd ${{ env.REPO_PATH_DEV }}
+  #         ./deploy.sh fetch_latest_changes prod
+
+  # build_deploy:
+  #   runs-on: ubuntu-latest
+  #   needs: rebuild_containers
+  #   steps:
+  #     - name: Build docker containers
+  #     uses: appleboy/ssh-action@v1.0.3
+  #     with:
+  #       host: ${{ secrets.HOST_PROD }}
+  #       username: ${{ secrets.USERNAME_PROD }}
+  #       key: ${{ secrets.SSH_KEY_PROD }}
+  #       script: |
+  #         echo "Starting PROD deployment build.."
+  #         cd ${{ env.REPO_PATH_DEV }}
+  #         ./deploy.sh deploy_ci prod
+    
+  # health_checks:
+  #   runs-on: ubuntu-latest
+  #   needs: build_deploy
+  #   steps:  
+  #   - name: Perform health checks
+  #     uses: appleboy/ssh-action@v1.0.3
+  #     with:
+  #       host: ${{ secrets.HOST_PROD }}
+  #       username: ${{ secrets.USERNAME_PROD }}
+  #       key: ${{ secrets.SSH_KEY_PROD }}
+  #       script: |
+  #         docker ps 
+          
+  #         echo "Sleeping for 20 seconds until containers are up.."
+  #         sleep 20
+
+  #         BACKEND_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8081/api/health)
+
+  #         if [ $BACKEND_CODE!="200" ] 
+  #         then
+  #             echo "FAILURE, backend not reachable"
+  #             exit 1
+  #         fi
+
+  #         FRONTEND_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:3001)
+
+  #         if [ $FRONTEND_CODE!="200" ] 
+  #         then
+  #             echo "FAILURE, frontend not reachable"
+  #             exit 1
+  #         fi
