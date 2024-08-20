@@ -45,7 +45,7 @@ jobs:
           key: ${{ secrets.SSH_KEY_DEV }}
           script: |
             echo "Starting DEV deployment build.."
-            cd "$REPO_PATH_DEV"
+            cd /opt/demos/fantastic-fiesta
             ./deploy.sh deploy_ci main
     
   health_checks:
