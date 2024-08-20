@@ -6,8 +6,8 @@ services:
     image: bot-api-service:dev
     container_name: bot-api-service-dev
     build:
-      context: ./src/
-      dockerfile: ./dockerfiles/dev_api.Dockerfile
+      context: ./dockerfiles/
+      dockerfile: ./dev_api.Dockerfile
     env_file:
         - ./src/backend/etc/.env
     volumes:
@@ -30,8 +30,8 @@ services:
     image: bot-ui-service:dev
     container_name: bot-ui-service-dev
     build:
-      context: ./src/
-      dockerfile: ./dockerfiles/dev_ui.Dockerfile
+      context: ./dockerfiles/
+      dockerfile: ./dev_ui.Dockerfile
     env_file:
       - ./src/frontend/.env
     volumes:
