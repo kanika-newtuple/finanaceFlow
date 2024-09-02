@@ -47,4 +47,4 @@ services:
 
 networks:
   llm-network:
-    external: false
+    external: true

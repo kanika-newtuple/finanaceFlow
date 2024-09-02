@@ -74,17 +74,17 @@ services:
 volumes:
   mongodb_data:
     name: mongodb_data
-    external: false
+    external: true
 
   postgres_dataa:
     name: postgres_dataa
-    external: false
+    external: true
 
   pgadmin_data:
     name: pgadmin_data
-    external: false
+    external: true
 
 networks:
   llm-network:
-    external: false
+    external: true
 
