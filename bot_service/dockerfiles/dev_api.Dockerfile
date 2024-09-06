@@ -5,7 +5,8 @@ ENV PATH="$VIRTUAL_ENV/bin:$PATH"
 COPY ./src/backend/requirements.txt /app/requirements.txt
 RUN pip install --disable-pip-version-check --no-cache-dir --no-input --quiet --requirement /app/requirements.txt
 RUN apt-get update -y 
-RUN apt-get install poppler-utils -y
+#RUN apt-get install poppler-utils -y
+RUN apt-get install curl -y
 COPY src/backend /app/backend
 WORKDIR /app/backend
 USER root
