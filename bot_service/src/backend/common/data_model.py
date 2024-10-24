@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import Any, Optional
+from typing import Any
 
 from pydantic import BaseModel as PydanticBaseModel
 from pydantic import ConfigDict
@@ -85,14 +85,6 @@ class APIHandlerConfiguration(BaseModel):
     openapi_spec_dir: str
 
 
-class CommonConfiguration(BaseModel):
-    """Represents the common configuration"""
-
-    max_retries: str
-    llm_logs_dir: str
-    llm_pr_queries_file: str
-
-
 class MongoDBConfiguration(BaseModel):
     """Represents the MongoDB configuration"""
 
@@ -124,15 +116,17 @@ class LangfuseConfiguration(BaseModel):
 
     env: str
 
+
 class CommonConfiguration(BaseModel):
     max_retries: int
 
+
 class PocketBaseConfiguration(BaseModel):
     """Represents the PocketBase configuration"""
+
     url: str
     admin_email: str
     admin_password: str
-
 
 
 # class AWSConfiguration(BaseModel):
@@ -141,22 +135,27 @@ class PocketBaseConfiguration(BaseModel):
 #     aws_access_key_id: str
 #     aws_secret_access_key: str
 
+
 class PineconeConfiguation(BaseModel):
     """Represents the Pinecone configuration"""
+
     api_key: str
     index: str
     namespace: str
     spec_cloud: str
     spec_region: str
-    metric: str 
+    metric: str
     timeout: int
+
 
 class AzureAISearchConfiguration(BaseModel):
     """Represents the AzureAISearch configuration"""
+
     endpoint: str
     key: str
     index_name: str
     semantic_configuration_name: str
+
 
 class Configuration(BaseModel):
     """Represents the configuration"""
@@ -176,7 +175,7 @@ class Configuration(BaseModel):
     # VectorDBConfiguration: VectorDBConfiguration
     api_handler_configuration: APIHandlerConfiguration
     common_configuration: CommonConfiguration
-    #transformer_configuration: TranformerConfiguration
+    # transformer_configuration: TranformerConfiguration
     mongodb_configuration: MongoDBConfiguration
     postgresql_configuration: PostgreSQLConfiguation
     pinecone_configuration: PineconeConfiguation
@@ -184,7 +183,6 @@ class Configuration(BaseModel):
 
     langfuse_configuration: LangfuseConfiguration
     pocketbase_configuration: PocketBaseConfiguration
-
 
 
 class QueryContext(BaseModel):

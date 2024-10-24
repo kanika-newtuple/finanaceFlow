@@ -1,17 +1,15 @@
 from argparse import ArgumentParser
+
+import uvicorn
+from common.configuration import Configuration
+from database.manager import DatabaseServiceManager
 from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from health.controller import HealthRestController
 from health.controller import app as HealthRouter
 from health.manager import HealthServiceManager
-from health.controller import HealthRestController
-
-from database.manager import DatabaseServiceManager
 from LLM.manager import LLMServiceManager
-
-from common.configuration import Configuration
-import uvicorn
-from common.logger import logger
 
 parser = ArgumentParser(description="Runs the BOT service")
 parser.add_argument("-e", "--env", help="Path to .env file", default="./etc/.env")
@@ -42,4 +40,4 @@ app.add_middleware(
 app.include_router(HealthRouter, prefix="/api")
 
 if __name__ == "__main__":
-    uvicorn.run("main:app", host=config_env.server_configuration.host, timeout_keep_alive=600, port=int(config_env.server_configuration.port),reload=True)
+    uvicorn.run("main:app", host=config_env.server_configuration.host, timeout_keep_alive=600, port=int(config_env.server_configuration.port), reload=True)

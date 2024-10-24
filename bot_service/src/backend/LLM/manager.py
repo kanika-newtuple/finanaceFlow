@@ -1,13 +1,11 @@
-from litellm import completion, acompletion
-import litellm
-from common.data_model import LLMProvider, Roles
-from common.logger import logger
-from pathlib import Path
-from csv import writer
-import tiktoken
 from typing import Any
 from uuid import uuid4
 
+import litellm
+import tiktoken
+from common.data_model import LLMProvider
+from common.logger import logger
+from litellm import acompletion
 
 litellm.success_callback = ["langfuse"]
 litellm.failure_callback = ["langfuse"]
@@ -20,13 +18,13 @@ class CommonLLM:
             return len(enc.encode(response))
         except KeyError as e:  # noqa
             logger.critical(f"Encoding not found for {self.model_name}, availble encodings {tiktoken.list_encoding_names()}!")
-    
+
     async def gather_chunks(self, async_generator):
-        response = ''
+        response = ""
         async for chunk in async_generator:
             response += chunk
         return response
-    
+
     @staticmethod
     def gather_vision_content(prompt: str, images: Any):
         content = [
@@ -37,50 +35,49 @@ class CommonLLM:
         ]
         for image in images:
             content.append(
-                        {
-                            "type": "image_url",
-                            "image_url": {"url": f"data:image/jpeg;base64,{image}"},
-                        },
-                    )
+                {
+                    "type": "image_url",
+                    "image_url": {"url": f"data:image/jpeg;base64,{image}"},
+                },
+            )
         return content
-    
+
 
 class LiteLLMService(CommonLLM):
     def __init__(self):
         super().__init__()
         self.model_name = None
 
-    async def completion(self, prompt: str, role: str = Roles.basic.value,  langfuse_meta_data: dict = {}, **kwargs):
-        response = await acompletion( model=self.model_name, messages=prompt, metadata=langfuse_meta_data, temperature=0, timeout=600, **kwargs)
+    async def completion(self, prompt: str, langfuse_meta_data: dict = {}, **kwargs):
+        response = await acompletion(model=self.model_name, messages=prompt, metadata=langfuse_meta_data, temperature=0, timeout=600, **kwargs)
         return response.choices[0].message.content
-    
-    async def acompletion(self, prompt: str, role: str = Roles.basic.value,  langfuse_meta_data: dict = {}, **kwargs):
+
+    async def acompletion(self, prompt: str, langfuse_meta_data: dict = {}, **kwargs):
         langfuse_meta_data.update({"trace_id": uuid4().hex})
         langfuse_meta_data.update({"generation_id": uuid4().hex})
 
-        async for stream_resp in await acompletion( model=self.model_name, messages=prompt, stream=True, metadata=langfuse_meta_data, temperature=0, timeout=600, **kwargs):
-                if stream_resp.choices and stream_resp.choices[0].delta.content:
-                    token = stream_resp.choices[0].delta.content
-                    yield token
+        async for stream_resp in await acompletion(model=self.model_name, messages=prompt, stream=True, metadata=langfuse_meta_data, temperature=0, timeout=600, **kwargs):
+            if stream_resp.choices and stream_resp.choices[0].delta.content:
+                token = stream_resp.choices[0].delta.content
+                yield token
 
     def set_client_by_model(self, model_name: str, **kwargs):
         self.model_name = model_name
-    
 
-class LLMServiceManager():
+
+class LLMServiceManager:
 
     def __init__(self):
         super().__init__()
         self._litellm_service = LiteLLMService()
-
 
     def litellm_service(self):
         return self._litellm_service
 
     def get_service(self, llm_provider: LLMProvider, model_name: str, **kwargs):
         match llm_provider:
-            
+
             case LLMProvider.lite_llm.value:
-                print('lite')
+                print("lite")
                 self._litellm_service.set_client_by_model(model_name=model_name, **kwargs)
                 return self.litellm_service()
