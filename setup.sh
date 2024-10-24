@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# This script will create a deployment user and group, 
+# This script will create a deployment user and group,
 # create ssh key pair, send public key to authorized key file and create a config file for github
 
 read -p "Enter deployment username to be created : " deployment_user
@@ -8,11 +8,13 @@ read -p "Enter deployment group to be created    : " deployment_group
 
 # Create deployment group using a function
 create_deployment_group() {
+    echo -e "Creating Deployment group.."
     sudo groupadd $deployment_group
 }
 
 # Create deployment user using a function
 create_deployment_user() {
+    echo -e "Creating Deployment user.."
     sudo useradd -m -s /bin/bash $deployment_user
     sudo usermod -aG $deployment_group $deployment_user
     # sudo passwd $deployment_user
@@ -20,6 +22,7 @@ create_deployment_user() {
 
 # Create ssh key pair named deploy using the deployment user using a function
 create_ssh_key_pair() {
+    echo -e "Creating ssh key pair.."
     su $deployment_user -c "mkdir ~/.ssh" $deployment_user
     su - -c "chmod 700 ~/.ssh" $deployment_user
     sudo su - $deployment_user -c "ssh-keygen -f ~/.ssh/"$deployment_user"_deploy -q -N '' " $deployment_user
@@ -27,6 +30,7 @@ create_ssh_key_pair() {
 
 # Send pubilic key to authorized-key file and set permissions using a function
 send_public_key() {
+    echo -e "Sending public key to authorized key file for ssh access.."
     su $deployment_user -c "touch ~/.ssh/authorized_keys" $deployment_user
     sudo su $deployment_user -c "echo  $(cat /home/$deployment_user/.ssh/"$deployment_user"_deploy.pub) > ~/.ssh/authorized_keys" $deployment_user
     su $deployment_user -c "chmod 600 ~/.ssh/authorized_keys" $deployment_user
@@ -34,6 +38,7 @@ send_public_key() {
 
 # create config file for github using a function
 create_config_file() {
+    echo -e "Creating config file for github.."
     su $deployment_user -c "touch ~/.ssh/config" $deployment_user
     sudo su $deployment_user -c "echo -e 'Host github.com\n\tHostName github.com\n\tUser git\n\tIdentityFile ~/.ssh/"$deployment_user"_deploy' > ~/.ssh/config" $deployment_user
     su $deployment_user -c "chmod 600 ~/.ssh/config" $deployment_user
@@ -51,7 +56,7 @@ confirmation() {
     echo -e "Config file for github with private key at : /home/$deployment_user/.ssh/config"
     echo -e ""
     read -p "Continue ? (Y/N): " confirm && [[ $confirm == [yY] || $confirm == [yY][eE][sS] ]] || exit 1
-    
+
     create_deployment_group
     create_deployment_user
     create_ssh_key_pair
@@ -63,7 +68,7 @@ confirmation() {
 
     echo -e "Apply the following commands to complete the process.."
     echo -e ""
-    echo "Add /home/$deployment_user/.ssh/"$deployment_user"_deploy.pub as Deploy key to Github repo access"
+    echo "Add Deploy key to Github for repo access /home/$deployment_user/.ssh/"$deployment_user"_deploy.pub"
     echo "Add GitHub action secrets for SSH"
     echo "On your cloned repo run, "sudo chgrp -R $deployment_group [repo_name or path]""
     echo "To allow read,write,execute run, "sudo chmod -R g+rwX [repo_name or path]""
