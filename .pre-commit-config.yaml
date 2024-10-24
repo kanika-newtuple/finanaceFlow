@@ -52,7 +52,7 @@ repos:
       - id: flake8
         args: [
           "--max-line-length=250",
-          "--ignore=E305",
+          "--ignore=E305,E203",
           "--max-complexity=10",
           "--filename=*.py",
           "--extend-exclude=./bot_service/src/chainlit_data_pers/*.py",

@@ -1,12 +1,11 @@
 version: "3.6"
 
 services:
-  # Uncomment while implementing APIs
   bot-api-service:
     image: bot-api-service:dev
     container_name: bot-api-service-dev
     build:
-      context: ./bot_service/
+      context: ./bot_service
       dockerfile: ./dockerfiles/dev_api.Dockerfile
     env_file:
         - ./bot_service/src/backend/etc/.env
@@ -21,7 +20,7 @@ services:
     ports:
       - 8082:8081
     networks:
-      - llm-network
+      - shared-network
     dns:
       - 8.8.8.8
     restart: "unless-stopped"
@@ -30,21 +29,29 @@ services:
     image: bot-ui-service:dev
     container_name: bot-ui-service-dev
     build:
-      context: ./bot_service/
+      context: ./bot_service
       dockerfile: ./dockerfiles/dev_ui.Dockerfile
     env_file:
       - ./bot_service/src/frontend/etc/.env
     volumes:
       - ./common:/app/common
+    healthcheck:
+      test: curl --fail http://localhost:3000 || exit 1
+      interval: 40s
+      timeout: 30s
+      retries: 3
+      start_period: 60s
     ports:
       - "3001:3000"
     networks:
-      - llm-network
+      - shared-network
     dns:
       - 8.8.8.8
     restart: "unless-stopped"
     command: ["npm", "start"]
+    depends_on:
+      - bot-api-service
 
 networks:
-  llm-network:
+  shared-network:
     external: true
