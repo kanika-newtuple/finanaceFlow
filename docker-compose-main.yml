@@ -20,7 +20,7 @@ services:
     ports:
       - 8082:8081
     networks:
-      - shared-network
+      - shared_network
     dns:
       - 8.8.8.8
     restart: "unless-stopped"
@@ -44,7 +44,7 @@ services:
     ports:
       - "3001:3000"
     networks:
-      - shared-network
+      - shared_network
     dns:
       - 8.8.8.8
     restart: "unless-stopped"
@@ -53,5 +53,5 @@ services:
       - bot-api-service
 
 networks:
-  shared-network:
+  shared_network:
     external: true

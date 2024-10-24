@@ -17,18 +17,18 @@ services:
       - TELEMETRY_ENABLED=false
       - LANGFUSE_ENABLE_EXPERIMENTAL_FEATURES=true
     networks:
-      - shared-network
+      - shared_network
 
   mongodb-service:
     container_name: mongodb-service
     image: mongo:latest
     environment:
-      MONGO_INITDB_ROOT_USERNAME: ${MONGO_INITDB_ROOT_USERNAME} 
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_INITDB_ROOT_USERNAME}
       MONGO_INITDB_ROOT_PASSWORD: ${MONGO_INITDB_ROOT_PASSWORD}
     ports:
       - 27017:27017
     networks:
-      - shared-network
+      - shared_network
     dns:
       - 8.8.8.8
     restart: "unless-stopped"
@@ -54,7 +54,7 @@ services:
     ports:
       - 5433:5432
     networks:
-      - shared-network
+      - shared_network
 
   pg-admin:
     container_name: pg-admin
@@ -68,7 +68,7 @@ services:
     ports:
       - 8002:80
     networks:
-      - shared-network
+      - shared_network
     depends_on:
       - pg-database
 
@@ -86,6 +86,5 @@ volumes:
     external: true
 
 networks:
-  shared-network:
+  shared_network:
     external: true
-
