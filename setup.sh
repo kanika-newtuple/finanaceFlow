@@ -23,25 +23,25 @@ create_deployment_user() {
 # Create ssh key pair named deploy using the deployment user using a function
 create_ssh_key_pair() {
     echo -e "Creating ssh key pair.."
-    su $deployment_user -c "mkdir ~/.ssh" $deployment_user
-    su - -c "chmod 700 ~/.ssh" $deployment_user
+    sudo su $deployment_user -c "mkdir ~/.ssh" $deployment_user
+    sudo su - -c "chmod 700 ~/.ssh" $deployment_user
     sudo su - $deployment_user -c "ssh-keygen -f ~/.ssh/"$deployment_user"_deploy -q -N '' " $deployment_user
 }
 
 # Send pubilic key to authorized-key file and set permissions using a function
 send_public_key() {
     echo -e "Sending public key to authorized key file for ssh access.."
-    su $deployment_user -c "touch ~/.ssh/authorized_keys" $deployment_user
+    sudo su $deployment_user -c "touch ~/.ssh/authorized_keys" $deployment_user
     sudo su $deployment_user -c "echo  $(cat /home/$deployment_user/.ssh/"$deployment_user"_deploy.pub) > ~/.ssh/authorized_keys" $deployment_user
-    su $deployment_user -c "chmod 600 ~/.ssh/authorized_keys" $deployment_user
+    sudo su $deployment_user -c "chmod 600 ~/.ssh/authorized_keys" $deployment_user
 }
 
 # create config file for github using a function
 create_config_file() {
     echo -e "Creating config file for github.."
-    su $deployment_user -c "touch ~/.ssh/config" $deployment_user
+    sudo su $deployment_user -c "touch ~/.ssh/config" $deployment_user
     sudo su $deployment_user -c "echo -e 'Host github.com\n\tHostName github.com\n\tUser git\n\tIdentityFile ~/.ssh/"$deployment_user"_deploy' > ~/.ssh/config" $deployment_user
-    su $deployment_user -c "chmod 600 ~/.ssh/config" $deployment_user
+    sudo su $deployment_user -c "chmod 600 ~/.ssh/config" $deployment_user
 }
 
 confirmation() {
@@ -69,13 +69,13 @@ confirmation() {
     echo -e "Apply the following commands to complete the process.."
     echo -e ""
     echo "Add Deploy key to Github for repo access /home/$deployment_user/.ssh/"$deployment_user"_deploy.pub"
-    echo "Add GitHub action secrets for SSH"
-    echo "On your cloned repo run, "sudo chgrp -R $deployment_group [repo_name or path]""
-    echo "To allow read,write,execute run, "sudo chmod -R g+rwX [repo_name or path]""
-    echo "To set default group as $deployment_group for new files/dir "sudo chmod -R g+s [repo_name or path]" "
-    echo "To add users into  $deployment_group run "sudo usermod -aG $deployment_group [username]""
-    echo "Install Docker using https://docs.docker.com/engine/install/ubuntu/#install-using-the-repository"
-    echo "To allow users to run docker commands run "sudo usermod -aG docker [username]""
+    echo "Add GitHub action secrets to setup SSH into the VM using the deployment user credentials"
+    echo "[Optional] On your cloned repo run, "sudo chgrp -R $deployment_group [repo_name or path]""
+    echo "[Optional] To allow read,write,execute run, "sudo chmod -R g+rwX [repo_name or path]""
+    echo "[Optional] To set default group as $deployment_group for new files/dir "sudo chmod -R g+s [repo_name or path]" "
+    echo "[Optional] To add users into  $deployment_group run "sudo usermod -aG $deployment_group [username]""
+    echo "[Optional] Install Docker using https://docs.docker.com/engine/install/ubuntu/#install-using-the-repository"
+    echo "[Optional] To allow users to run docker commands run "sudo usermod -aG docker [username]""
 }
 
 confirmation
