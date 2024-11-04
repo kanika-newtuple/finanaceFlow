@@ -1,7 +1,7 @@
 # To use github actions for CI/CD make the following changes
 
-- Login into the VM the clone the repo
-- Run the setup [script](setup.sh), to create deployment group, user, authorized_keys & git config
+- Login into the VM and clone the repo
+- Run the setup [script](setup.sh) to create deployment group, user, authorized_keys & git config
 - The repo needs to be cloned using [deploy keys](https://newtuple.atlassian.net/wiki/spaces/DAKB/pages/196847/Everything+about+SSH#How-to-setup-a-Production-server-with-repo-access-to-GitHub%3A) intially on the vm with all `.env` files being created in the respective backend at `/fantastic-fiesta/bot_service/src/backend/etc/.env` and frontend `/fantastic-fiesta/bot_service/src/frontend/etc/.env`
 
 
