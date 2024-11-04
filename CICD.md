@@ -1,5 +1,9 @@
 # To use github actions for CI/CD make the following changes
 
+- Login into the VM the clone the repo
+- Run the setup [script](setup.sh), to create deployment group, user, authorized_keys & git config
+- The repo needs to be cloned using [deploy keys](https://newtuple.atlassian.net/wiki/spaces/DAKB/pages/196847/Everything+about+SSH#How-to-setup-a-Production-server-with-repo-access-to-GitHub%3A) intially on the vm with all `.env` files being created in the respective backend at `/fantastic-fiesta/bot_service/src/backend/etc/.env` and frontend `/fantastic-fiesta/bot_service/src/frontend/etc/.env`
+
 
 ### Add the following github action secrets for if setting up dev environment
 >- HOST_DEV
@@ -16,9 +20,6 @@
 
 where *Host* is the IP address of the vm, *username* is the user which can ssh into the vm, *ssh_key* is private ssh key for same user and repo_path is the full path to the repo on the vm
 
-- Run the setup [script](setup.sh), to create deployment group, user, authorized_keys & git config
-
-- The repo needs to be cloned using [deploy keys](https://newtuple.atlassian.net/wiki/spaces/DAKB/pages/196847/Everything+about+SSH#How-to-setup-a-Production-server-with-repo-access-to-GitHub%3A) intially on the vm with all `.env` files being created in the respective backend at `/fantastic-fiesta/bot_service/src/backend/etc/.env` and frontend `/fantastic-fiesta/bot_service/src/frontend/etc/.env`
 
 ## Some things to be taken care of
 >- A `.env` with contents from [sample](.env_sample) at root level is required for the commom services
