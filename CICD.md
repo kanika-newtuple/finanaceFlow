@@ -88,7 +88,7 @@ Asssuming the repo you are going to setup CI/CD for is in the below structure
 ```
 
 - Login into the VM
-- Run the setup [script](setup.sh) to create deployment group, user, authorized_keys for ssh & git config for git
+- Run the setup [script](setup.sh) as sudo/superuser to create deployment group, user, authorized_keys for ssh & git config for git
 - The repo needs to be cloned using [deploy keys](https://newtuple.atlassian.net/wiki/spaces/DAKB/pages/196847/Everything+about+SSH#How-to-setup-a-Production-server-with-repo-access-to-GitHub%3A) intially on the vm with all `.env` files being created in the respective backend at `/fantastic-fiesta/bot_service/src/backend/etc/.env` and frontend `/fantastic-fiesta/bot_service/src/frontend/etc/.env`
 - Use the new user details to populate the details where ever required
 
