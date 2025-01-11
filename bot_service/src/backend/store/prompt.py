@@ -165,7 +165,7 @@ class PromptStore:
                 Ensure that any SQL query you generate will conform to the following DDL.
                 DDL: {{ddl}}
 
-                Previous query that failed with repsonse: {{retry_query_context}}
+                Previous query that failed with response: {{retry_query_context}}
 
                 Instructions:
                 1. YOUR OUTPUT SHOULD BE ONLY THE SQL QUERY AND NOTHING OTHER THAN THAT.
