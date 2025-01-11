@@ -9,6 +9,7 @@
         2.Alembic.md # Use data migration for the schema changes
         3.Observability.md # Instrument your applicaton to collect obs data
         4.OpenTelemetery.md # Standard for collection obs data
+        5.Kubernetes.md # Deploy your application to K8
         ...       # Other markdown pages, images and other files.
 
 ## About
@@ -21,6 +22,7 @@ Here's how to navigate through this documentation:
 2. Learn about database schema management and migrations through [Alembic](./2.Alembic.md).
 3. Understand how to implement application monitoring by following [Observability](./3.Observability.md).
 4. Explore the standardized approach to collecting observability data using [OpenTelemetry](./4.OpenTelemetery.md).
+5. Deploy your application to Kubernetes by following [Kubernetes](./5.Kubernetes.md).
 5. Additional documentation files are available for more specific topics and features.
 
 ## Commands to load the documentation locally
