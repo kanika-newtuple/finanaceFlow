@@ -4,9 +4,6 @@
 from fastapi import APIRouter
 from health.manager import HealthServiceManager
 from health.models import HealthResponse
-from uuid import uuid4
-
-app = APIRouter()
 
 
 class HealthRestController:
@@ -16,7 +13,7 @@ class HealthRestController:
         super().__init__()
         self._health_service_manager = health_service_manager
 
-    def prepare(self) -> None:
+    def prepare(self, app: APIRouter) -> None:
 
         @app.get("/health", response_model=HealthResponse)
         async def health() -> HealthResponse:

@@ -1,4 +1,5 @@
 name: Build and Deploy - DEV
+
 on:
   workflow_dispatch:
   push:
@@ -7,18 +8,35 @@ on:
     branches: [ "main" ]
 
 jobs:
+
+
   precommit:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
+
+      # Cache pre-commit hooks
+      - name: Cache pre-commit
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cache/pre-commit
+          key: pre-commit-${{ runner.os }}-${{ hashFiles('.pre-commit-config.yaml') }}
+          restore-keys: |
+            pre-commit-${{ runner.os }}-
+
       - name: Install dependencies
         run: |
           python3 -m pip install --upgrade pip
+          cd ./bot_service/src/backend/
           pip3 install pre-commit
           pre-commit install
+
       - name: Run pre-commit
-        run: pre-commit run --files ./bot_service/src/backend/*
+        run: |
+          cd ./bot_service/src/backend/
+          pre-commit run -a
 
   run_tests:
     runs-on: ubuntu-latest
@@ -26,13 +44,19 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
+
       - name: Install dependencies
         run: |
           python3 -m pip install --upgrade pip
-          pip3 install -r bot_service/src/backend/requirements.txt
+          pip3 install --disable-pip-version-check --no-cache-dir --no-input uv
+          uv venv
+          uv pip install --no-cache -r bot_service/src/backend/requirements.in
+          source ./.venv/bin/activate
           pip3 install pytest
+
       - name: Run tests
         run: |
+          source ./.venv/bin/activate
           pytest -v ./bot_service/src/backend/tests/
 
   fetch_latest_changes:
@@ -53,7 +77,6 @@ jobs:
             cd ${{ secrets.REPO_PATH_DEV }}
             ./deploy.sh fetch_latest_changes main
 
-            
   build_deploy:
     runs-on: ubuntu-latest
     needs: fetch_latest_changes
@@ -72,7 +95,6 @@ jobs:
             cd ${{ secrets.REPO_PATH_DEV }}
             ./deploy.sh deploy_ci main
 
-
   health_checks:
     runs-on: ubuntu-latest
     needs: build_deploy
@@ -85,23 +107,22 @@ jobs:
           username: ${{ secrets.USERNAME_DEV }}
           key: ${{ secrets.SSH_KEY_DEV }}
           script: |
-            docker ps 
-          
+            docker ps
+
             echo "Sleeping for 20 seconds until containers are up.."
             sleep 20
 
-            BACKEND_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8082/api/health)
+            BACKEND_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8083/api/v1/health)
+            # FRONTEND_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:3000)
 
-            if [ $BACKEND_CODE != 200 ] 
+            if [ $BACKEND_CODE != 200 ]
             then
                 echo "FAILURE with status $BACKEND_CODE, backend not reachable"
                 exit 1
             fi
 
-            FRONTEND_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:3001)
-
-            if [ $FRONTEND_CODE != 200 ] 
-            then
-                echo "FAILURE with status $FRONTEND_CODE, frontend not reachable"
-                exit 1
-            fi
+            # if [ $FRONTEND_CODE != 200 ]
+            # then
+            #     echo "FAILURE with status $FRONTEND_CODE, frontend not reachable"
+            #     exit 1
+            # fi

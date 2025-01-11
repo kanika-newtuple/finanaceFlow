@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import Any
+from typing import Any, Optional
 
 from pydantic import BaseModel as PydanticBaseModel
 from pydantic import ConfigDict
@@ -17,7 +17,7 @@ class BaseModel(PydanticBaseModel):
 
     model_config = ConfigDict(
         populate_by_name=True,
-        validate_assignment=True,
+        # validate_assignment=True,
         arbitrary_types_allowed=True,
         protected_namespaces=(),
     )
@@ -95,7 +95,7 @@ class MongoDBConfiguration(BaseModel):
     db: str
 
 
-class PostgreSQLConfiguation(BaseModel):
+class PostgreSQLConfiguration(BaseModel):
     """Represents the PostgreSQL configuration"""
 
     host: str
@@ -104,6 +104,34 @@ class PostgreSQLConfiguation(BaseModel):
     password: str
     db: str
     app_schema: str
+
+
+class SQLServerConfiguration(BaseModel):
+    """Represents the SQLServer configuration"""
+
+    host: str
+    port: int
+    username: str
+    password: str
+    db: str
+    app_schema: str
+
+
+class SQLiteConfiguration(BaseModel):
+    """Represents the SQLite configuration"""
+
+    db_path: str
+
+
+class OpenSearchConfiguration(BaseModel):
+    """Represents the OpenSearch configuration"""
+
+    host: str
+    username: str
+    password: str
+    use_ssl: bool
+    verify_certs: bool
+    index_name: str
 
 
 class LLMResponseFormatConfiguration(BaseModel):
@@ -177,7 +205,11 @@ class Configuration(BaseModel):
     common_configuration: CommonConfiguration
     # transformer_configuration: TranformerConfiguration
     mongodb_configuration: MongoDBConfiguration
-    postgresql_configuration: PostgreSQLConfiguation
+    postgresql_configuration: PostgreSQLConfiguration
+    sqlserver_configuration: SQLServerConfiguration
+    sqlite_configuration: SQLiteConfiguration
+    opensearch_configuration: OpenSearchConfiguration
+
     pinecone_configuration: PineconeConfiguation
     # llm_response_format_configuration: LLMResponseFormatConfiguration
 
@@ -194,6 +226,22 @@ class QueryContext(BaseModel):
 
 
 # region Constants
+class LangfuseMetaData(BaseModel):
+    generation_name: str
+    generation_id: str
+    parent_observation_id: str
+    version: str
+    trace_user_id: str
+    session_id: str
+    tags: list[str]
+    trace_name: str
+    trace_id: str
+    trace_metadata: dict[str, Any]
+    trace_version: str
+    trace_release: str
+    existing_trace_id: Optional[str] = None
+    update_trace_keys: Optional[list[str]] = None
+    debug_langfuse: Optional[bool] = None
 
 
 class Roles(ExtendedEnum):

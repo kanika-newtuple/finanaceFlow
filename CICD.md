@@ -4,17 +4,25 @@ Asssuming the repo you are going to setup CI/CD for is in the below structure
 
 ```
 .
+.
 ├── CICD.md
+├── LGTM
+│   ├── grafana
+│   │   └── defaults.ini
+│   ├── loki
+│   │   └── loki-config.yml
+│   ├── prometheus
+│   │   └── prometheus.yml
+│   └── tempo
+│       └── tempo.yml
 ├── Makefile
+├── OTEL
+│   └── otel-collector-config.yaml
 ├── README.md
 ├── bot_service
-│   ├── common
-│   │   └── common.md
 │   ├── dockerfiles
-│   │   ├── dev_api.Dockerfile
-│   │   ├── dev_ui.Dockerfile
-│   │   ├── prod_api.Dockerfile
-│   │   └── prod_ui.Dockerfile
+│   │   ├── api.Dockerfile
+│   │   └── ui.Dockerfile
 │   └── src
 │       ├── backend
 │       │   ├── LLM
@@ -22,13 +30,29 @@ Asssuming the repo you are going to setup CI/CD for is in the below structure
 │       │   │   ├── __pycache__
 │       │   │   └── manager.py
 │       │   ├── __pycache__
+│       │   ├── alembic
+│       │   │   ├── README
+│       │   │   ├── __init__.py
+│       │   │   ├── __pycache__
+│       │   │   ├── env.py
+│       │   │   ├── script.py.mako
+│       │   │   └── versions
+│       │   │       ├── 2025_01_11_2002-239b3b78d573_initialize_db_models.py
+│       │   │       ├── 2025_01_11_2002-635d9283a785_initialize_db_models.py
+│       │   │       └── __pycache__
+│       │   ├── alembic.ini
+│       │   ├── auth
+│       │   │   ├── __init__.py
+│       │   │   ├── __pycache__
+│       │   │   └── manager.py
 │       │   ├── common
 │       │   │   ├── __init__.py
 │       │   │   ├── __pycache__
 │       │   │   ├── configuration.py
 │       │   │   ├── controller.py
 │       │   │   ├── data_model.py
-│       │   │   └── logger.py
+│       │   │   ├── logger.py
+│       │   │   └── utils.py
 │       │   ├── config_ini_sample
 │       │   ├── database
 │       │   │   ├── __init__.py
@@ -36,45 +60,79 @@ Asssuming the repo you are going to setup CI/CD for is in the below structure
 │       │   │   └── manager.py
 │       │   ├── env_sample
 │       │   ├── etc
-|       |   |   ├── .env
 │       │   │   └── config.ini
 │       │   ├── exceptions
 │       │   │   ├── __init__.py
 │       │   │   ├── __pycache__
 │       │   │   ├── config.py
 │       │   │   ├── db.py
-│       │   │   └── pb.py
+│       │   │   ├── pb.py
+│       │   │   └── user.py
 │       │   ├── health
 │       │   │   ├── __init__.py
 │       │   │   ├── __pycache__
 │       │   │   ├── controller.py
 │       │   │   ├── manager.py
 │       │   │   └── models.py
-│       │   ├── logs
 │       │   ├── main.py
+│       │   ├── metrics
+│       │   │   ├── __init__.py
+│       │   │   ├── __pycache__
+│       │   │   ├── controller.py
+│       │   │   ├── manager.py
+│       │   │   └── models
+│       │   │       ├── __init__.py
+│       │   │       ├── __pycache__
+│       │   │       ├── interfaces
+│       │   │       │   ├── __init__.py
+│       │   │       │   └── metics.py
+│       │   │       ├── request
+│       │   │       │   ├── __init__.py
+│       │   │       │   └── metrics.py
+│       │   │       └── responses
+│       │   │           ├── __init__.py
+│       │   │           ├── __pycache__
+│       │   │           └── metrics.py
+│       │   ├── monitoring
+│       │   │   ├── __init__.py
+│       │   │   ├── __pycache__
+│       │   │   └── prometheus.py
+│       │   ├── requirements.in
 │       │   ├── requirements.txt
 │       │   ├── store
 │       │   │   ├── __init__.py
 │       │   │   ├── __pycache__
 │       │   │   └── prompt.py
-│       │   └── tests
+│       │   ├── tests
+│       │   │   ├── __init__.py
+│       │   │   ├── __pycache__
+│       │   │   └── unit_tests
+│       │   │       ├── __init__.py
+│       │   │       ├── __pycache__
+│       │   │       ├── conf.py
+│       │   │       └── test_health.py
+│       │   └── user
 │       │       ├── __init__.py
 │       │       ├── __pycache__
-│       │       └── unit_tests
+│       │       ├── controller.py
+│       │       ├── db_models.py
+│       │       ├── manager.py
+│       │       └── models
 │       │           ├── __init__.py
 │       │           ├── __pycache__
-│       │           ├── conf.py
-│       │           └── test_health.py
-│       └── frontend
-│           ├── craco.config.js
-│           ├── etc
-|           |   ├── .env
-│           │   └── sample.md
-│           ├── package.json
-│           ├── public
-│           │   └── index.html
-│           └── src
-│               └── index.js
+│       │           ├── interface.py
+│       │           ├── request.py
+│       │           └── response.py
+│       ├── frontend
+│       │   ├── craco.config.js
+│       │   ├── etc
+│       │   │   └── sample.md
+│       │   ├── package.json
+│       │   ├── public
+│       │   │   └── index.html
+│       │   └── src
+│       │       └── index.js
+│       └── logs
 ├── common
 ├── deploy.sh
 ├── docker-compose-main.yml
@@ -82,9 +140,48 @@ Asssuming the repo you are going to setup CI/CD for is in the below structure
 ├── docker-compose-services.yml
 ├── experiments
 │   └── experiments.ipynb
-├── setup.sh
-└── shell_scripts
-    └── execute.sh
+├── infra
+│   ├── Makefile
+│   └── helm
+│       ├── bot_service
+│       │   ├── Chart.yaml
+│       │   └── templates
+│       │       ├── config_map.yaml
+│       │       ├── hpa.yaml
+│       │       ├── service_deployment.yaml
+│       │       ├── service_ingress.yaml
+│       │       └── service_service.yaml
+│       ├── langfuse-k8s
+│       │   ├── Chart.lock
+│       │   ├── Chart.yaml
+│       │   ├── README.md
+│       │   ├── charts
+│       │   │   └── postgresql-15.5.38.tgz
+│       │   └── templates
+│       │       ├── _helpers.tpl
+│       │       ├── deployment.yaml
+│       │       ├── extra-manifests.yaml
+│       │       ├── hpa.yaml
+│       │       ├── ingress.yaml
+│       │       ├── nextauth-secret.yaml
+│       │       ├── postgresql-secret.yaml
+│       │       ├── service.yaml
+│       │       └── serviceaccount.yaml
+│       ├── pushgateway
+│       │   ├── Chart.yaml
+│       │   └── templates
+│       │       ├── pvc.yaml
+│       │       ├── service_deployment.yaml
+│       │       ├── service_ingress.yaml
+│       │       └── service_service.yaml
+│       └── tesseract
+│           ├── Chart.yaml
+│           └── templates
+│               ├── hpa.yaml
+│               ├── service_deployment.yaml
+│               ├── service_ingress.yaml
+│               └── service_service.yaml
+└── setup.sh
 ```
 
 - Login into the VM

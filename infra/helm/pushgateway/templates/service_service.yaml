@@ -1,0 +1,24 @@
+{{- range .Values.services }}
+{{- if .service.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .name }}-service
+  labels:
+    app: {{ .name }}
+  annotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "9091"
+    prometheus.io/path: "/metrics"
+spec:
+  type: ClusterIP
+  ports:
+  - port: 80
+    targetPort: 9091
+    protocol: TCP
+    name: http
+  selector:
+    app: {{ .name }}
+---
+{{- end }}
+{{- end }}

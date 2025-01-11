@@ -75,6 +75,26 @@ class Configuration:
                 "db": os.environ.get("POSTGRES_DB"),
                 "app_schema": os.environ.get("POSTGRES_APP_SCHEMA"),
             },
+            "sqlserver_configuration": {
+                "host": os.environ.get("SQLSERVER_HOST", "localhost"),
+                "port": int(os.environ.get("SQLSERVER_PORT", 1433)),
+                "username": os.environ.get("SQLSERVER_USERNAME", "sa"),
+                "password": os.environ.get("SQLSERVER_PASSWRD", "Password123"),
+                "db": os.environ.get("SQLSERVER_DB", "master"),
+                "app_schema": os.environ.get("SQLSERVER_APP_SCHEMA", "dbo"),
+            },
+            "sqlite_configuration": {
+                "db_path": os.environ.get("SQLITE_DB", "sqlite.db"),
+            },
+            "opensearch_configuration": {
+                "host": os.environ.get("OPENSEARCH_HOST", "localhost"),
+                "port": int(os.environ.get("OPENSEARCH_PORT", 9200)),
+                "username": os.environ.get("OPENSEARCH_USERNAME", "admin"),
+                "password": os.environ.get("OPENSEARCH_PASSWORD", "admin"),
+                "use_ssl": os.environ.get("OPENSEARCH_USE_SSL", True),
+                "verify_certs": os.environ.get("OPENSEARCH_VERIFY_CERTS", True),
+                "index_name": os.environ.get("OPENSEARCH_INDEX_NAME", "index"),
+            },
             "langfuse_configuration": {
                 "env": os.environ.get("LANGFUSE_ENV"),
             },

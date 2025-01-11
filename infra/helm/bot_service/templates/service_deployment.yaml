@@ -1,0 +1,64 @@
+{{- range .Values.services }}
+{{- if .enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .name }}-deployment
+  labels:
+    app: {{ .name }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ .name }}
+  template:
+    metadata:
+      labels:
+        app: {{ .name }}
+      {{- if .metrics.enabled }}
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/path: {{ .metrics.scrapePath | quote }}
+        prometheus.io/port: {{ .port | quote }}
+      {{- end }}
+      {{- if .hpa.enabled }}
+        hpa.autoscaling.k8s.io/enabled: "true"
+      {{- end }}
+    spec:
+      containers:
+      - name: {{ .name }}
+        image: {{ .imageName }}:{{ $.Values.releases.version }}
+        imagePullPolicy: Always
+        env:
+        - name: PORT
+          value: {{ .port | quote }}
+        {{- if .env }}
+        {{- range $key, $value := .env }}
+        - name: {{ $key }}
+          value: {{ $value | quote }}
+        {{- end }}
+        {{- end }}
+        ports:
+        - containerPort: {{ .port }}
+        resources:
+          limits:
+            cpu: {{ .resources.limits.cpu }}
+            memory: {{ .resources.limits.memory }}
+          requests:
+            cpu: {{ .resources.requests.cpu }}
+            memory: {{ .resources.requests.memory }}
+        livenessProbe:
+          httpGet:
+            path: {{ .livenessProbePath | quote }}
+            port: {{ .port }}
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: {{ .readinessProbePath | quote }}
+            port: {{ .port }}
+          initialDelaySeconds: 30
+          periodSeconds: 10
+---
+{{- end }}
+{{- end }}

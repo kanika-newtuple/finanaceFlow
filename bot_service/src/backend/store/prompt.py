@@ -1,6 +1,10 @@
 from langfuse import Langfuse, model
 
+
 class PromptStore:
+
+    def __init__(self):
+        self.langfuse = Langfuse()
 
     _PROMPTS = {
         "summarizer": {
@@ -174,11 +178,9 @@ class PromptStore:
         },
     }
 
-    def prompt(self, prompt_name: str) -> str:
+    def get_static_prompt(self, prompt_name: str) -> str:
         return self._PROMPTS[prompt_name]
 
     def get_prompt(self, prompt_name, type="chat") -> model.ChatPromptClient:
-
-        langfuse = Langfuse()
-        prompt = langfuse.get_prompt(prompt_name, type=type)
+        prompt = self.langfuse.get_prompt(prompt_name, type=type)
         return prompt

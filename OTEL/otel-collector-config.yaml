@@ -1,0 +1,47 @@
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+
+  prometheus:
+    config:
+      scrape_configs:
+        - job_name: 'my-app'
+          metrics_path: '/api/v1/metrics'
+          scheme: http
+          static_configs:
+            - targets: ['bot-api-service:8081']
+exporters:
+  datadog:
+    api:
+      key: "75851a5b73752e"
+      site: "us5.datadoghq.com"
+
+    metrics:
+      resource_attributes_as_tags: true
+      instrumentation_scope_metadata_as_tags: false
+    host_metadata:
+      enabled: true
+      hostname_source: first_resource
+
+extensions:
+  health_check:
+  pprof:
+  zpages:
+
+service:
+  pipelines:
+    # traces:
+    #   receivers: [otlp]
+    #   processors: [batch]
+    #   exporters: [datadog, datadog/connector]
+    metrics:
+      receivers: [prometheus]
+      exporters: [datadog]
+      # processors: [batch]
+    logs:
+      receivers: [otlp]
+      exporters: [datadog]

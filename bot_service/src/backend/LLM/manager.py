@@ -1,23 +1,22 @@
 from typing import Any
-from uuid import uuid4
 
 import litellm
 import tiktoken
 from common.data_model import LLMProvider
 from common.logger import logger
-from litellm import acompletion
+from litellm import acompletion, aembedding
 
 litellm.success_callback = ["langfuse"]
 litellm.failure_callback = ["langfuse"]
 
 
 class CommonLLM:
-    async def token_counter(self, response: str) -> int:
+    def token_counter(self, response: str) -> int:
         try:
             enc = tiktoken.encoding_for_model(self.model_name)
             return len(enc.encode(response))
         except KeyError as e:  # noqa
-            logger.critical(f"Encoding not found for {self.model_name}, availble encodings {tiktoken.list_encoding_names()}!")
+            logger.critical(f"Encoding not found for {self.model_name}, available encodings {tiktoken.list_encoding_names()}!")
 
     async def gather_chunks(self, async_generator):
         response = ""
@@ -49,17 +48,27 @@ class LiteLLMService(CommonLLM):
         self.model_name = None
 
     async def completion(self, prompt: str, langfuse_meta_data: dict = {}, **kwargs):
+        # langfuse_meta_data.update({"trace_id": uuid4().hex})
+        # langfuse_meta_data.update({"generation_id": uuid4().hex})
+
         response = await acompletion(model=self.model_name, messages=prompt, metadata=langfuse_meta_data, temperature=0, timeout=600, **kwargs)
         return response.choices[0].message.content
 
-    async def acompletion(self, prompt: str, langfuse_meta_data: dict = {}, **kwargs):
-        langfuse_meta_data.update({"trace_id": uuid4().hex})
-        langfuse_meta_data.update({"generation_id": uuid4().hex})
+    async def acompletion(self, prompt: str, langfuse_meta_data: dict = {}, **kwargs):  # noqa: ASYNC900
+        # langfuse_meta_data.update({"trace_id": uuid4().hex})
+        # langfuse_meta_data.update({"generation_id": uuid4().hex})
 
         async for stream_resp in await acompletion(model=self.model_name, messages=prompt, stream=True, metadata=langfuse_meta_data, temperature=0, timeout=600, **kwargs):
             if stream_resp.choices and stream_resp.choices[0].delta.content:
                 token = stream_resp.choices[0].delta.content
                 yield token
+
+    async def embed(self, model: str, documents: list[str], langfuse_meta_data: dict = {}, **kwargs):
+        # langfuse_meta_data.update({"trace_id": uuid4().hex})
+        # langfuse_meta_data.update({"generation_id": uuid4().hex})
+
+        response = await aembedding(model, input=documents, **kwargs)
+        return response
 
     def set_client_by_model(self, model_name: str, **kwargs):
         self.model_name = model_name
@@ -77,7 +86,6 @@ class LLMServiceManager:
     def get_service(self, llm_provider: LLMProvider, model_name: str, **kwargs):
         match llm_provider:
 
-            case LLMProvider.lite_llm.value:
-                print("lite")
+            case LLMProvider.lite_llm:
                 self._litellm_service.set_client_by_model(model_name=model_name, **kwargs)
                 return self.litellm_service()

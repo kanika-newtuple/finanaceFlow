@@ -4,13 +4,13 @@ services:
     container_name: bot-api-service-prod
     build:
       context: ./bot_service
-      dockerfile: ./dockerfiles/prod_api.Dockerfile
+      dockerfile: ./dockerfiles/api.Dockerfile
     env_file:
         - ./bot_service/src/backend/etc/.env
     volumes:
       - ./common:/app/common
     healthcheck:
-      test: curl --fail http://localhost:8081/api/health || exit 1
+      test: curl --fail http://localhost:8081/v1/api/health || exit 1
       interval: 40s
       timeout: 30s
       retries: 3
@@ -28,7 +28,7 @@ services:
     container_name: bot-ui-service-prod
     build:
       context: ./bot_service
-      dockerfile: ./dockerfiles/prod_ui.Dockerfile
+      dockerfile: ./dockerfiles/ui.Dockerfile
     env_file:
       - ./bot_service/src/frontend/etc/.env
     volumes:

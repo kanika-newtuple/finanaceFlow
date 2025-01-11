@@ -1,0 +1,41 @@
+{{- range .Values.services }}
+{{- if .ingress.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ .name }}-service
+  annotations:
+    {{- range $key, $value := .ingress.annotations }}
+    {{ $key }}: {{ $value | quote }}
+    {{- end }}
+  labels:
+    app: {{ .name }}
+spec:
+  ingressClassName: nginx
+  rules:
+  {{- if .ingress.host }}
+  - host: {{ .ingress.host }}
+    http:
+      paths:
+      - path: "/"
+        pathType: Prefix
+        backend:
+          service:
+            name: {{ .name }}-service
+            port:
+              number: {{ .port | default 80 }}
+  {{- end }}
+  {{- if .ingress.path_regex }}
+  - http:
+      paths:
+      - path: {{ .ingress.path_regex }}
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: {{ .name }}-service
+            port:
+              number: {{ .port | default 80 }}
+  {{- end }}
+{{- end }}
+---
+{{- end }}
