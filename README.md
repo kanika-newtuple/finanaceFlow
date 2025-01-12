@@ -16,6 +16,10 @@ Use the Quickstart to start backend & frontend
 
 NOTE : Running `docker buildx prune -a` & `docker builder prune -a` allows your system to be cleaned time to time
 
+Reading the docs locally:
+> - Use `pip3 install mkdocs-material` to install mkdocs
+> - Use `python3 -m mkdocs serve -a localhost:8001` to start serving documentation locally
+> - Use `mkdocs gh-deploy --force` to deploy the docs to GitHub pages
 
 Running code quality tools:
 > - Use `pip3 install pre-commit-hooks` to install pre-commit hooks & navigate to `./bot_service/`

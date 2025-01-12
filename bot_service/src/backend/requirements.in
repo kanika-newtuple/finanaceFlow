@@ -396,9 +396,9 @@ pymupdf==1.25.1
 pyodbc==5.2.0
     # via -r requirements.txt
 pypdf==5.1.0
-    # via llama-index-readers-file
-pypdf2==3.0.1
-    # via -r requirements.txt
+    # via
+    #   -r requirements.txt
+    #   llama-index-readers-file
 pytest==8.3.4
     # via
     #   -r requirements.txt
@@ -420,7 +420,7 @@ python-json-logger==3.2.1
     # via -r requirements.txt
 python-levenshtein==0.26.1
     # via -r requirements.txt
-python-multipart==0.0.12
+python-multipart==0.0.18
     # via -r requirements.txt
 pytz==2024.2
     # via pandas
