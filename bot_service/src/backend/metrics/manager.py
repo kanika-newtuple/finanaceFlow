@@ -1,4 +1,5 @@
 # This file contains the manager for the metrics service
+import prometheus_client as prom_client
 from monitoring.prometheus import (
     CLASSIFY_EXTRACT_TIME,
     INFO,
@@ -6,7 +7,6 @@ from monitoring.prometheus import (
     REQUEST_COUNT,
     REQUEST_TIME,
     SYSTEM_USAGE,
-    prom_client,
 )
 
 

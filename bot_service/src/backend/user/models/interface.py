@@ -1,6 +1,7 @@
 from datetime import datetime
 
 from pydantic import BaseModel as PydanticBaseModel
+from pydantic import ConfigDict
 
 
 class User(PydanticBaseModel):
@@ -18,5 +19,6 @@ class UserCreate(PydanticBaseModel):
     username: str
     password: str
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(
+        from_attributes=True,
+    )
