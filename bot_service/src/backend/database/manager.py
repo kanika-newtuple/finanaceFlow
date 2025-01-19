@@ -13,6 +13,7 @@ from sqlalchemy import MetaData, create_engine
 from sqlalchemy.engine import URL, Engine
 from sqlalchemy.exc import (
     CompileError,
+    DatabaseError,
     NoSuchTableError,
     OperationalError,
     ProgrammingError,
@@ -248,9 +249,8 @@ class PostgresDBService:
         db = sessionlocal()
         try:
             yield db
-        except OperationalError as e:
-            # logger.critical(f"Unable to perform postgres db operation due to error {e}, rolling back")
-            raise ValueError(f"Unable to perform postgres db operation due to error {e}, rolling back")
+        except (OperationalError, SQLAlchemyError, ProgrammingError, NoSuchTableError, CompileError, DatabaseError) as e:
+            raise SQLAlchemyError(f"Unable to perform postgres db operation due to error {e}, rolling back")
         finally:
             db.close()
 
@@ -262,10 +262,9 @@ class PostgresDBService:
             db_session = scoped_session(sessionmaker(autocommit=False, autoflush=True, bind=engine, expire_on_commit=False))
             yield db_session
             db_session.commit()
-        except (OperationalError, BaseException) as e:
-            # logger.critical(f"Unable to perform postgres db operation due to error {e}, rolling back")
+        except (OperationalError, SQLAlchemyError, ProgrammingError, NoSuchTableError, CompileError, DatabaseError) as e:
             db_session.rollback()
-            raise ValueError(f"Unable to perform postgres db operation due to error {e}, rolling back")
+            raise SQLAlchemyError(f"Unable to perform postgres db operation due to error {e}, rolling back")
         finally:
             db_session.close()
             connection.close()
@@ -305,7 +304,16 @@ class SQLServerDBService:
             host=config.configuration().sqlserver_configuration.host,
             port=config.configuration().sqlserver_configuration.port,
             database=config.configuration().sqlserver_configuration.db,
-            query={"driver": "ODBC Driver 18 for SQL Server", "TrustServerCertificate": "yes", "application_name": config.configuration().application_name},
+            query={
+                "driver": "ODBC Driver 18 for SQL Server",
+                "TrustServerCertificate": "yes",
+                "application_name": "app",
+                "ConnectRetryCount": "4",
+                "ConnectRetryInterval": "5",
+                "ConnectionTimeout": "5",
+                "Connection Timeout": "120",
+                "Timeout": "120",
+            },
         )
 
         self.engine = create_engine(
@@ -324,7 +332,16 @@ class SQLServerDBService:
             host=config.host,
             port=config.port,
             database=config.db,
-            query={"driver": "ODBC Driver 18 for SQL Server", "TrustServerCertificate": "yes", "application_name": "PEOS"},
+            query={
+                "driver": "ODBC Driver 18 for SQL Server",
+                "TrustServerCertificate": "yes",
+                "application_name": "app",
+                "ConnectRetryCount": "4",
+                "ConnectRetryInterval": "5",
+                "ConnectionTimeout": "5",
+                "Connection Timeout": "120",
+                "Timeout": "120",
+            },
         )
         engine = create_engine(
             SQLALCHEMY_DATABASE_URL,
@@ -344,6 +361,8 @@ class SQLServerDBService:
         db = sessionlocal()
         try:
             yield db
+        except (OperationalError, SQLAlchemyError, ProgrammingError, NoSuchTableError, CompileError, DatabaseError) as e:
+            raise SQLAlchemyError(f"Unable to perform SQLServer db operation due to error {e}, rolling back")
         finally:
             db.close()
 
@@ -355,10 +374,9 @@ class SQLServerDBService:
             db_session = scoped_session(sessionmaker(autocommit=False, autoflush=True, bind=engine, expire_on_commit=False))
             yield db_session
             db_session.commit()
-        except (OperationalError, SQLAlchemyError, ProgrammingError, NoSuchTableError, CompileError) as e:
-            logger.critical(f"Unable to perform SQL Server db operation due to error {str(e)}, rolling back")
+        except (OperationalError, SQLAlchemyError, ProgrammingError, NoSuchTableError, CompileError, DatabaseError) as e:
             db_session.rollback()
-            raise ValueError(f"Unable to perform SQL Server db operation due to error {str(e)}, rolling back")
+            raise SQLAlchemyError(f"Unable to perform SQLServer db operation due to error {e}, rolling back")
         finally:
             db_session.close()
             connection.close()
@@ -411,6 +429,8 @@ class SQLiteDBService:
         db = sessionlocal()
         try:
             yield db
+        except (OperationalError, SQLAlchemyError, ProgrammingError, NoSuchTableError, CompileError, DatabaseError) as e:
+            raise SQLAlchemyError(f"Unable to perform SQLite db operation due to error {e}, rolling back")
         finally:
             db.close()
 
@@ -422,10 +442,9 @@ class SQLiteDBService:
             db_session = scoped_session(sessionmaker(autocommit=False, autoflush=True, bind=engine, expire_on_commit=False))
             yield db_session
             db_session.commit()
-        except SQLAlchemyError as e:
-            logger.critical(f"Unable to perform SQLite db operation due to error {str(e)}, rolling back")
+        except (OperationalError, SQLAlchemyError, ProgrammingError, NoSuchTableError, CompileError, DatabaseError) as e:
             db_session.rollback()
-            raise ValueError(f"Unable to perform SQLite db operation due to error {str(e)}, rolling back")
+            raise SQLAlchemyError(f"Unable to perform SQLite db operation due to error {e}, rolling back")
         finally:
             db_session.close()
             connection.close()

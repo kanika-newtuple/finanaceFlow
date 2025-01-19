@@ -2,7 +2,9 @@ from datetime import UTC, datetime
 
 from common.logger import logger
 from database.manager import DatabaseServiceManager
+from exceptions.db import DBException
 from sqlalchemy import JSON, Boolean, Column, DateTime, Integer, String, inspect
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session, declarative_base
 from sqlalchemy.sql import func
 from user.models.interface import UserCreate
@@ -68,33 +70,44 @@ class UserModelService:
         Returns:
             User: The user object if found, otherwise None.
         """
-        db_user = db.query(User).filter(User.email == email).first()
-        return db_user
+        try:
+            db_user = db.query(User).filter(User.email == email).first()
+            return db_user
+        except SQLAlchemyError as e:
+            raise DBException(f"Could not get user by email due to {e}")
 
     def create_user(self, db: Session, user: UserCreate) -> User:
-
-        db_user = User(
-            email=user.email,
-            username=user.username,
-            hashed_password=user.password,
-        )
-        db.add(db_user)
-        db.commit()
-        db.refresh(db_user)
-        return db_user
+        try:
+            db_user = User(
+                email=1,
+                username=user.username,
+                hashed_password=user.password,
+            )
+            db.add(db_user)
+            db.commit()
+            db.refresh(db_user)
+            return db_user
+        except SQLAlchemyError as e:
+            raise DBException(f"Could not create user due to {e}")
 
     def delete_user(self, db: Session, db_user):
-        db_user: User
-        db_user.is_active = False
-        db_user.updated_at = datetime.now(UTC)
-        db.commit()
-        db.refresh(db_user)
-        return db_user
+        try:
+            db_user: User
+            db_user.is_active = False
+            db_user.updated_at = datetime.now(UTC)
+            db.commit()
+            db.refresh(db_user)
+            return db_user
+        except SQLAlchemyError as e:
+            raise DBException(f"Could not delete user due to {e}")
 
     def activate_user(self, db: Session, db_user):
-        db_user: User
-        db_user.is_active = True
-        db_user.updated_at = datetime.now(UTC)
-        db.commit()
-        db.refresh(db_user)
-        return db_user
+        try:
+            db_user: User
+            db_user.is_active = True
+            db_user.updated_at = datetime.now(UTC)
+            db.commit()
+            db.refresh(db_user)
+            return db_user
+        except SQLAlchemyError as e:
+            raise DBException(f"Could not activate user due to {e}")

@@ -6,6 +6,7 @@ from typing import Annotated
 from auth.manager import basic_security
 from common.utils import verify_password
 from database.manager import DatabaseServiceManager
+from exceptions.db import DBException
 from exceptions.user import InactiveUser, UserExists
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.security import HTTPBasicCredentials
@@ -65,10 +66,10 @@ class UserRestController:
     def prepare(self, app: APIRouter) -> None:
 
         @app.post("/create_user", status_code=status.HTTP_200_OK, tags=["users"], response_model=UserResponse)
-        async def create_user(request: Request, user_create_request: UserCreateRequest = Depends(), db=Depends(self.current_db.get_gen_db)):
+        async def create_user(request: Request, user_create_request: UserCreateRequest = Depends(), db_session=Depends(self.current_db.get_gen_db)):  # noqa: F841
             try:
                 with OPERATION_TIME.labels(request.url.path, "api").time():
-                    user = self.user_service_manager.add_user(db, user_create_request)
+                    user = self.user_service_manager.add_user(db_session, user_create_request)
                     REQUEST_COUNT.labels(request.method, request.url.path, status.HTTP_200_OK).inc()
                     return user
 
@@ -76,7 +77,11 @@ class UserRestController:
                 REQUEST_COUNT.labels(request.method, request.url.path, status.HTTP_400_BAD_REQUEST).inc()
                 raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
-            except Exception as e:
+            except DBException as e:
+                REQUEST_COUNT.labels(request.method, request.url.path, status.HTTP_400_BAD_REQUEST).inc()
+                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+
+            except BaseException as e:
                 REQUEST_COUNT.labels(request.method, request.url.path, status.HTTP_500_INTERNAL_SERVER_ERROR).inc()
                 raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
 
@@ -94,6 +99,10 @@ class UserRestController:
                     return db_user
 
             except InactiveUser as e:
+                REQUEST_COUNT.labels(request.method, request.url.path, status.HTTP_400_BAD_REQUEST).inc()
+                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+
+            except DBException as e:
                 REQUEST_COUNT.labels(request.method, request.url.path, status.HTTP_400_BAD_REQUEST).inc()
                 raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
@@ -116,6 +125,10 @@ class UserRestController:
                     return db_user
 
             except InactiveUser as e:
+                REQUEST_COUNT.labels(request.method, request.url.path, status.HTTP_400_BAD_REQUEST).inc()
+                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+
+            except DBException as e:
                 REQUEST_COUNT.labels(request.method, request.url.path, status.HTTP_400_BAD_REQUEST).inc()
                 raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 

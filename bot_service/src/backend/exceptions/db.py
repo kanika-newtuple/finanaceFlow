@@ -1,3 +1,4 @@
 class DBException(Exception):
-    def __init__(self, missing_fields: list):
-        super().__init__(missing_fields)
+    def __init__(self, message: str):
+        self.message = message
+        super().__init__(self.message)
