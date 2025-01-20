@@ -42,7 +42,7 @@ fmt_file = "%(levelname)4s %(asctime)s [%(filename)s:%(funcName)s:%(lineno)d] %(
 otel_fmt_file = "%(levelname)4s %(asctime)s [%(filename)s:%(funcName)s:%(lineno)d][trace_id: %(trace_id)s%(span_id)s][span_id: %(span_id)s]%(message)s "
 
 # shell_formatter = logging.Formatter(fmt_shell)
-shell_formatter = logging.Formatter(fmt_file)
+shell_formatter = logging.Formatter(otel_fmt_file)
 file_formatter = logging.Formatter(fmt_file)
 otel_formatter = logging.Formatter(otel_fmt_file)
 
@@ -51,16 +51,16 @@ shell_handler.setFormatter(shell_formatter)
 file_handler.setFormatter(file_formatter)
 
 # Add handlers
-logger.addHandler(shell_handler)
+# logger.addHandler(shell_handler)
 logger.addHandler(file_handler)
 
 
-AGENT_HOSTNAME = os.getenv("AGENT_HOSTNAME", "localhost")
-AGENT_PORT = int(os.getenv("AGENT_PORT", "4317"))
+OTEL_AGENT_HOSTNAME = os.getenv("OTEL_AGENT_HOSTNAME", "localhost")
+OTEL_AGENT_PORT = int(os.getenv("OTEL_AGENT_PORT", "4317"))
 
 trace.set_tracer_provider(TracerProvider())
 tracer_provider: TracerProvider = trace.get_tracer_provider()
-otlp_exporter = OTLPSpanExporter(endpoint=f"{AGENT_HOSTNAME}:{AGENT_PORT}", insecure=True)
+otlp_exporter = OTLPSpanExporter(endpoint=f"{OTEL_AGENT_HOSTNAME}:{OTEL_AGENT_PORT}", insecure=True)
 span_processor = BatchSpanProcessor(otlp_exporter)
 tracer_provider.add_span_processor(span_processor)
 tracer = trace.get_tracer(__name__)
@@ -112,7 +112,7 @@ logger_provider = LoggerProvider(resource)
 set_logger_provider(logger_provider)
 
 # Create the OTLP log exporter that sends logs to configured destination
-exporter = OTLPLogExporter(endpoint=f"{AGENT_HOSTNAME}:{AGENT_PORT}", insecure=True)
+exporter = OTLPLogExporter(endpoint=f"{OTEL_AGENT_HOSTNAME}:{OTEL_AGENT_PORT}", insecure=True)
 logger_provider.add_log_record_processor(BatchLogRecordProcessor(exporter))
 
 # Attach OTLP handler to root logger
