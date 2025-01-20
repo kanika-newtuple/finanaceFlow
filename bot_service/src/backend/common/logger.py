@@ -46,6 +46,7 @@ shell_formatter = logging.Formatter(otel_fmt_file)
 file_formatter = logging.Formatter(fmt_file)
 otel_formatter = logging.Formatter(otel_fmt_file)
 
+
 # Set formatters
 shell_handler.setFormatter(shell_formatter)
 file_handler.setFormatter(file_formatter)
@@ -92,14 +93,11 @@ class CustomJsonFormatter(jsonlogger.JsonFormatter):
         super().add_fields(log_record, record, message_dict)
 
         span = trace.get_current_span()
-        context = span.get_span_context()
 
-        trace_id = context.trace_id
-        span_id = context.span_id
-
-        if trace_id:
-            log_record["trace_id"] = "{trace:032x}".format(trace=trace_id)
-            log_record["span_id"] = "{span:016x}".format(span=span_id)
+        if span:
+            span_context = span.get_span_context()
+            log_record["trace_id"] = "{trace:032x}".format(trace=span_context.trace_id)
+            log_record["span_id"] = "{span:016x}".format(span=span_context.span_id)
         else:
             log_record["trace_id"] = None
             log_record["span_id"] = None
@@ -119,8 +117,13 @@ logger_provider.add_log_record_processor(BatchLogRecordProcessor(exporter))
 handler = LoggingHandler(logging.DEBUG, logger_provider=logger_provider)
 handler.setLevel(logging.DEBUG)
 handler.setFormatter(SpanFormatter(otel_fmt_file))
-# handler.setFormatter(CustomJsonFormatter(otel_fmt_file))
+
+# ENABLE JSON LOGGER
+handler.setFormatter(CustomJsonFormatter(otel_fmt_file))
+shell_handler.setFormatter(CustomJsonFormatter(otel_fmt_file))
 
 logger.addHandler(handler)
 logger.addHandler(shell_handler)
+
+# UNCOMMENT TO ENABLE OTEL EXPORTER
 logger_provider.shutdown()
