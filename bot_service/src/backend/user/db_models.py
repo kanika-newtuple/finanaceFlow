@@ -79,7 +79,8 @@ class UserModelService:
     def create_user(self, db: Session, user: UserCreate) -> User:
         try:
             db_user = User(
-                email=1,
+                # email=1, # Uncomment this line to test the simulate db error
+                email=user.email,
                 username=user.username,
                 hashed_password=user.password,
             )

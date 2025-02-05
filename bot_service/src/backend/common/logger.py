@@ -39,7 +39,7 @@ file_handler.setLevel(logging.DEBUG)
 # Formatters for shell and file
 fmt_shell = "%(message)s"
 fmt_file = "%(levelname)4s %(asctime)s [%(filename)s:%(funcName)s:%(lineno)d] %(message)s"
-otel_fmt_file = "%(levelname)4s %(asctime)s [%(filename)s:%(funcName)s:%(lineno)d][trace_id: %(trace_id)s%(span_id)s][span_id: %(span_id)s]%(message)s "
+otel_fmt_file = "%(levelname)4s %(asctime)s [%(filename)s:%(funcName)s:%(lineno)d] %(message)s [trace_id: %(trace_id)s%(span_id)s][span_id: %(span_id)s] "
 
 # shell_formatter = logging.Formatter(fmt_shell)
 shell_formatter = logging.Formatter(otel_fmt_file)
@@ -118,9 +118,9 @@ handler = LoggingHandler(logging.DEBUG, logger_provider=logger_provider)
 handler.setLevel(logging.DEBUG)
 handler.setFormatter(SpanFormatter(otel_fmt_file))
 
-# ENABLE JSON LOGGER
-handler.setFormatter(CustomJsonFormatter(otel_fmt_file))
-shell_handler.setFormatter(CustomJsonFormatter(otel_fmt_file))
+# ENABLE/DISABLE JSON LOGGER
+# handler.setFormatter(CustomJsonFormatter(otel_fmt_file))
+# shell_handler.setFormatter(CustomJsonFormatter(otel_fmt_file))
 
 logger.addHandler(handler)
 logger.addHandler(shell_handler)

@@ -8,6 +8,7 @@ from common.data_model import (
     SQLServerConfiguration,
 )
 from common.logger import logger
+from exceptions.db import DBException
 from opensearchpy import OpenSearch, RequestsHttpConnection
 from sqlalchemy import MetaData, create_engine
 from sqlalchemy.engine import URL, Engine
@@ -244,16 +245,6 @@ class PostgresDBService:
         db = sessionlocal()
         return db
 
-    def get_gen_db(self):
-        sessionlocal = sessionmaker(autocommit=False, autoflush=False, bind=self.engine, expire_on_commit=False)
-        db = sessionlocal()
-        try:
-            yield db
-        except (OperationalError, SQLAlchemyError, ProgrammingError, NoSuchTableError, CompileError, DatabaseError) as e:
-            raise SQLAlchemyError(f"Unable to perform postgres db operation due to error {e}, rolling back")
-        finally:
-            db.close()
-
     @contextmanager
     def get_custom_db_contxt_session(self, engine: Engine):
         """Creates a context with an open SQLAlchemy session."""
@@ -261,13 +252,22 @@ class PostgresDBService:
             connection = engine.connect()
             db_session = scoped_session(sessionmaker(autocommit=False, autoflush=True, bind=engine, expire_on_commit=False))
             yield db_session
-            db_session.commit()
-        except (OperationalError, SQLAlchemyError, ProgrammingError, NoSuchTableError, CompileError, DatabaseError) as e:
+        except (OperationalError, SQLAlchemyError, ProgrammingError, NoSuchTableError, CompileError, DatabaseError, DBException) as e:
             db_session.rollback()
-            raise SQLAlchemyError(f"Unable to perform postgres db operation due to error {e}, rolling back")
+            raise DBException(f"Unable to perform PostgreSQL db operation due to error {e}, rolling back")
         finally:
-            db_session.close()
-            connection.close()
+            errors = []
+            try:
+                db_session.close()
+            except Exception as e:
+                errors.append(e)
+            try:
+                connection.close()
+            except Exception as e:
+                errors.append(e)
+            if errors:
+                logger.error(f"Failed to close connection and session due to {errors}")
+                raise SQLAlchemyError(f"Failed to close connection and session due to {errors}")
 
     def get_all_table_ddls(self, engine: Engine):
         try:
@@ -356,16 +356,6 @@ class SQLServerDBService:
         db = sessionlocal()
         return db
 
-    def get_gen_db(self):
-        sessionlocal = sessionmaker(autocommit=False, autoflush=False, bind=self.engine, expire_on_commit=False)
-        db = sessionlocal()
-        try:
-            yield db
-        except (OperationalError, SQLAlchemyError, ProgrammingError, NoSuchTableError, CompileError, DatabaseError) as e:
-            raise SQLAlchemyError(f"Unable to perform SQLServer db operation due to error {e}, rolling back")
-        finally:
-            db.close()
-
     @contextmanager
     def get_custom_db_contxt_session(self, engine: Engine):
         """Creates a context with an open SQLAlchemy session."""
@@ -373,13 +363,22 @@ class SQLServerDBService:
             connection = engine.connect()
             db_session = scoped_session(sessionmaker(autocommit=False, autoflush=True, bind=engine, expire_on_commit=False))
             yield db_session
-            db_session.commit()
-        except (OperationalError, SQLAlchemyError, ProgrammingError, NoSuchTableError, CompileError, DatabaseError) as e:
+        except (OperationalError, SQLAlchemyError, ProgrammingError, NoSuchTableError, CompileError, DatabaseError, DBException) as e:
             db_session.rollback()
-            raise SQLAlchemyError(f"Unable to perform SQLServer db operation due to error {e}, rolling back")
+            raise DBException(f"Unable to perform SQLServer db operation due to error {e}, rolling back")
         finally:
-            db_session.close()
-            connection.close()
+            errors = []
+            try:
+                db_session.close()
+            except Exception as e:
+                errors.append(e)
+            try:
+                connection.close()
+            except Exception as e:
+                errors.append(e)
+            if errors:
+                logger.error(f"Failed to close connection and session due to {errors}")
+                raise SQLAlchemyError(f"Failed to close connection and session due to {errors}")
 
     def get_all_table_ddls(self, engine: Engine):
         try:
@@ -424,16 +423,6 @@ class SQLiteDBService:
         db = sessionlocal()
         return db
 
-    def get_gen_db(self):
-        sessionlocal = sessionmaker(autocommit=False, autoflush=False, bind=self.engine, expire_on_commit=False)
-        db = sessionlocal()
-        try:
-            yield db
-        except (OperationalError, SQLAlchemyError, ProgrammingError, NoSuchTableError, CompileError, DatabaseError) as e:
-            raise SQLAlchemyError(f"Unable to perform SQLite db operation due to error {e}, rolling back")
-        finally:
-            db.close()
-
     @contextmanager
     def get_custom_db_contxt_session(self, engine: Engine):
         """Creates a context with an open SQLAlchemy session."""
@@ -441,10 +430,9 @@ class SQLiteDBService:
             connection = engine.connect()
             db_session = scoped_session(sessionmaker(autocommit=False, autoflush=True, bind=engine, expire_on_commit=False))
             yield db_session
-            db_session.commit()
-        except (OperationalError, SQLAlchemyError, ProgrammingError, NoSuchTableError, CompileError, DatabaseError) as e:
+        except (OperationalError, SQLAlchemyError, ProgrammingError, NoSuchTableError, CompileError, DatabaseError, DBException) as e:
             db_session.rollback()
-            raise SQLAlchemyError(f"Unable to perform SQLite db operation due to error {e}, rolling back")
+            raise DBException(f"Unable to perform SQLite db operation due to error {e}, rolling back")
         finally:
             db_session.close()
             connection.close()
