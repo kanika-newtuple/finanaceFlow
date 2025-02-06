@@ -36,14 +36,14 @@ class UserModelService:
         self.current_db = self.database_manager.postgres_db_service()
         self.engine = self.current_db.engine
 
-        try:
-            if Base:
-                logger.info("Trying creating base tables for users..")
-                Base.metadata.create_all(bind=self.engine)
+        # try:
+        if Base:
+            logger.info("Trying creating base tables for users..")
+            Base.metadata.create_all(bind=self.engine)
 
-        except BaseException as e:
-            error = {"ERROR": e}
-            logger.critical(f"Could not create base tables for users due to \n {error}, db operations won't work!", exc_info=1)
+        # except BaseException as e:
+        #     error = {"ERROR": e}
+        #     logger.critical(f"Could not create base tables for users due to \n {error}, db operations won't work!", exc_info=1)
 
     def get_user(self, db: Session, username: str = None):
         """
@@ -56,7 +56,21 @@ class UserModelService:
         Returns:
             User: The user object if found, otherwise None.
         """
-        db_user = db.query(User).filter(User.username == username, User.is_active is True).first()
+        db_user = db.query(User).filter(User.username == username).first()
+        return db_user
+
+    def get_active_user(self, db: Session, username: str = None):
+        """
+        Retrieves a user from the database based on the username.
+
+        Args:
+            db (Session): The database session.
+            username (str, optional): The username of the user to retrieve.
+
+        Returns:
+            User: The user object if found, otherwise None.
+        """
+        db_user = db.query(User).filter(User.username == username, User.is_active == True).first()  # noqa: E712
         return db_user
 
     def get_user_by_email(self, db: Session, email: str = None):

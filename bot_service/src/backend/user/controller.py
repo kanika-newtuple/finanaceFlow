@@ -36,8 +36,15 @@ class UserRestController:
 
         is_correct_username, is_correct_password = False, False
 
-        with self.current_db.get_custom_db_contxt_session(self.current_db_engine) as db_session:
-            db_user = self.user_service_manager.get_user(db=db_session, username=credentials.username)
+        try:
+            with self.current_db.get_custom_db_contxt_session(self.current_db_engine) as db_session:
+                db_user = self.user_service_manager.get_active_user(db=db_session, username=credentials.username)
+        except InactiveUser as e:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=str(e),
+                # headers={"WWW-Authenticate": "Basic"},
+            )
 
         if db_user:
             correct_username_bytes = bytes(str(db_user.username), encoding="utf8")

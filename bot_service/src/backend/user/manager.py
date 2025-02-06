@@ -34,8 +34,9 @@ class UserServiceManager:
         db_user = self.user_db_model_service.get_user(db=db, username=user.username)
         db_user_email = self.user_db_model_service.get_user_by_email(db=db, email=user.email)
 
+        print("user", db_user)
         if db_user and db_user.is_active or db_user_email and db_user_email.is_active:
-            raise UserExists("User with this username/email already exists.")
+            raise UserExists("An active user with this username/email already exists.")
 
         if not db_user:
             new_db_user = UserCreate(username=user.username, password=get_password_hash(user.password), email=user.email)
@@ -58,6 +59,22 @@ class UserServiceManager:
             User: The user object if found, otherwise None.
         """
         db_user = self.user_db_model_service.get_user(db=db, username=username)
+        if not db_user:
+            raise InactiveUser("No user was found with this username.")
+        return db_user
+
+    def get_active_user(self, db: Session, username: str) -> User:
+        """
+        Retrieves a user from the database based on the username.
+
+        Args:
+            db (Session): The database session.
+            username (str, optional): The username of the user to retrieve.
+
+        Returns:
+            User: The user object if found, otherwise None.
+        """
+        db_user = self.user_db_model_service.get_active_user(db=db, username=username)
         if not db_user:
             raise InactiveUser("No active user was found with this username.")
         return db_user
