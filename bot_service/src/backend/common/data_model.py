@@ -247,6 +247,7 @@ class LangfuseMetaData(BaseModel):
 
 class Roles(ExtendedEnum):
     "Represents roles"
+
     admin: str = "Admin"
     basic: str = "Basic"
     Developer: str = "Developer"
@@ -254,6 +255,7 @@ class Roles(ExtendedEnum):
 
 class LLMProvider(ExtendedEnum):
     "Represents provider"
+
     openai: str = "openai"
     bedrock: str = "bedrock"
     azure_openai: str = "azure_openai"
@@ -311,6 +313,7 @@ class BedrockModelMapping(ExtendedEnum):
 
 class LangfusePrompt(ExtendedEnum):
     "Represents llm prompts"
+
     search_eval: str = "search_eval"
     search_eval_compare: str = "search_eval_compare"
     global_search: str = "global_search"
@@ -321,6 +324,7 @@ class LangfusePrompt(ExtendedEnum):
 
 class DatabaseType(ExtendedEnum):
     "Represents different database types"
+
     postgresql: str = "postgresql"
     pinecone: str = "pinecone"
     azure_ai_search: str = "azure_ai_search"
