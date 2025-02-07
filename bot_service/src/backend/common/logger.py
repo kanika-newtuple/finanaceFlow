@@ -85,6 +85,10 @@ class SpanFormatter(logging.Formatter):
         record.trace_id = self._current_trace_id
         record.span_id = self._current_span_id
 
+        # Handle multiline messages by adding trace info to each line
+        if record.exc_info:
+            record.exc_text = "\n".join([f"[trace_id: {self._current_trace_id}][span_id: {self._current_span_id}] {line}" for line in self.formatException(record.exc_info).split("\n")])
+
         return super().format(record)
 
 
@@ -101,6 +105,12 @@ class CustomJsonFormatter(jsonlogger.JsonFormatter):
         else:
             log_record["trace_id"] = None
             log_record["span_id"] = None
+
+        # Handle multiline messages by adding trace info to each line
+        if "exc_info" in message_dict:
+            if isinstance(message_dict["exc_info"], str):
+                lines = message_dict["exc_info"].split("\n")
+                message_dict["exc_info"] = "\n".join([f"[trace_id: {log_record.get('trace_id')}][span_id: {log_record.get('span_id')}] {line}" for line in lines])
 
 
 resource = Resource(attributes={"service.name": "service-foobar"})

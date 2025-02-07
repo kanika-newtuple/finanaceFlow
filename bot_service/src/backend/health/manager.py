@@ -9,4 +9,4 @@ class HealthServiceManager:
         """Returns the health response"""
         with tracer.start_as_current_span("HealthServiceManager.ping"):
             logger.info("HealthServiceManager.ping")
-            return HealthResponse(alive=True)
+            return HealthResponse(alive=True)  # noqa

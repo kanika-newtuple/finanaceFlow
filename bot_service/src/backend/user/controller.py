@@ -59,7 +59,7 @@ class UserRestController:
                     detail="Incorrect credentials",
                     # headers={"WWW-Authenticate": "Basic"},
                 )
-            return db_user
+            return db_user  # noqa
 
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -76,7 +76,7 @@ class UserRestController:
                     with self.current_db.get_custom_db_contxt_session(self.current_db_engine) as db_session:
                         user = self.user_service_manager.add_user(db_session, user_create_request)
                         REQUEST_COUNT.labels(request.method, request.url.path, status.HTTP_200_OK).inc()
-                        return user
+                        return user  # noqa: ASYNC910
 
             except (UserExists, DBException) as e:
                 REQUEST_COUNT.labels(request.method, request.url.path, status.HTTP_400_BAD_REQUEST).inc()
@@ -99,7 +99,7 @@ class UserRestController:
                     with self.current_db.get_custom_db_contxt_session(self.current_db_engine) as db_session:
                         db_user = self.user_service_manager.get_user(db=db_session, username=user.username)
                         REQUEST_COUNT.labels(request.method, request.url.path, status.HTTP_200_OK).inc()
-                        return db_user
+                        return db_user  # noqa: ASYNC910
 
             except (InactiveUser, DBException) as e:
                 REQUEST_COUNT.labels(request.method, request.url.path, status.HTTP_400_BAD_REQUEST).inc()
@@ -122,7 +122,7 @@ class UserRestController:
                     with self.current_db.get_custom_db_contxt_session(self.current_db_engine) as db_session:
                         db_user = self.user_service_manager.delete_user(db=db_session, username=username)
                         REQUEST_COUNT.labels(request.method, request.url.path, status.HTTP_200_OK).inc()
-                        return db_user
+                        return db_user  # noqa: ASYNC910
 
             except (InactiveUser, DBException) as e:
                 REQUEST_COUNT.labels(request.method, request.url.path, status.HTTP_400_BAD_REQUEST).inc()

@@ -13,6 +13,7 @@ repos:
         
       - id: check-yaml
         args: ['--unsafe']
+        exclude: ^infra/
         
       - id: check-case-conflict
         
@@ -109,6 +110,11 @@ repos:
           "--exclude=/src/chainlit_data_pers/"
         ]
         
+  - repo: https://github.com/econchick/interrogate
+    rev: 1.4.0  
+    hooks:
+      - id: interrogate
+        args: [-v, -i, --fail-under=80]
 
   - repo: https://github.com/PyCQA/bandit
     rev: 1.8.0
