@@ -3,6 +3,7 @@ from datetime import UTC, datetime
 from common.logger import logger
 from database.manager import DatabaseServiceManager
 from exceptions.db import DBException
+from exceptions.user import InactiveUser
 from sqlalchemy import JSON, Boolean, Column, DateTime, Integer, String, inspect
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session, declarative_base
@@ -34,46 +35,18 @@ class UserModelService:
         super().__init__()
         self.database_manager = database_service_manager
         self.current_db = self.database_manager.postgres_db_service()
-        self.engine = self.current_db.engine
+        self.current_db_engine = self.current_db.engine
 
         # try:
         if Base:
-            logger.info("Trying creating base tables for users..")
-            Base.metadata.create_all(bind=self.engine)
+            logger.critical("Trying creating base tables for users..")
+            Base.metadata.create_all(bind=self.current_db_engine)
 
         # except BaseException as e:
         #     error = {"ERROR": e}
         #     logger.critical(f"Could not create base tables for users due to \n {error}, db operations won't work!", exc_info=1)
 
-    def get_user(self, db: Session, username: str = None):
-        """
-        Retrieves a user from the database based on the username.
-
-        Args:
-            db (Session): The database session.
-            username (str, optional): The username of the user to retrieve.
-
-        Returns:
-            User: The user object if found, otherwise None.
-        """
-        db_user = db.query(User).filter(User.username == username).first()
-        return db_user
-
-    def get_active_user(self, db: Session, username: str = None):
-        """
-        Retrieves a user from the database based on the username.
-
-        Args:
-            db (Session): The database session.
-            username (str, optional): The username of the user to retrieve.
-
-        Returns:
-            User: The user object if found, otherwise None.
-        """
-        db_user = db.query(User).filter(User.username == username, User.is_active == True).first()  # noqa: E712
-        return db_user
-
-    def get_user_by_email(self, db: Session, email: str = None):
+    def get_user(self, username: str = None):
         """
         Retrieves a user from the database based on the username.
 
@@ -85,44 +58,89 @@ class UserModelService:
             User: The user object if found, otherwise None.
         """
         try:
-            db_user = db.query(User).filter(User.email == email).first()
-            return db_user
-        except SQLAlchemyError as e:
+            with self.current_db.get_custom_db_contxt_session(self.current_db_engine) as db:
+                db_user = db.query(User).filter(User.username == username).first()
+                return db_user
+        except DBException as e:
+            raise DBException(f"Could not get user due to {e}")
+
+    def get_active_user(self, username: str = None):
+        """
+        Retrieves a user from the database based on the username.
+
+        Args:
+            db (Session): The database session.
+            username (str, optional): The username of the user to retrieve.
+
+        Returns:
+            User: The user object if found, otherwise None.
+        """
+        try:
+            with self.current_db.get_custom_db_contxt_session(self.current_db_engine) as db:
+                db_user = db.query(User).filter(User.username == username, User.is_active == True).first()  # noqa: E712
+                return db_user
+        except DBException as e:
+            raise DBException(f"Could not get active user due to {e}")
+
+    def get_user_by_email(self, email: str = None):
+        """
+        Retrieves a user from the database based on the username.
+
+        Args:
+            db (Session): The database session.
+            username (str, optional): The username of the user to retrieve.
+
+        Returns:
+            User: The user object if found, otherwise None.
+        """
+        try:
+            with self.current_db.get_custom_db_contxt_session(self.current_db_engine) as db:
+                db_user = db.query(User).filter(User.email == email).first()
+                return db_user
+
+        except DBException as e:
             raise DBException(f"Could not get user by email due to {e}")
 
-    def create_user(self, db: Session, user: UserCreate) -> User:
+    def create_user(self, user: UserCreate) -> User:
         try:
-            db_user = User(
-                # email=1, # Uncomment this line to test the simulate db error
-                email=user.email,
-                username=user.username,
-                hashed_password=user.password,
-            )
-            db.add(db_user)
-            db.commit()
-            db.refresh(db_user)
-            return db_user
-        except SQLAlchemyError as e:
+            with self.current_db.get_custom_db_contxt_session(self.current_db_engine) as db:
+                db_user = User(
+                    # email=1, # Uncomment this line to test the simulate db error
+                    email=user.email,
+                    username=user.username,
+                    hashed_password=user.password,
+                )
+                db.add(db_user)
+                db.commit()
+                db.refresh(db_user)
+                return db_user
+        except DBException as e:
             raise DBException(f"Could not create user due to {e}")
 
-    def delete_user(self, db: Session, db_user):
+    def delete_user(self, username: str):
         try:
-            db_user: User
-            db_user.is_active = False
-            db_user.updated_at = datetime.now(UTC)
-            db.commit()
-            db.refresh(db_user)
-            return db_user
-        except SQLAlchemyError as e:
-            raise DBException(f"Could not delete user due to {e}")
+            with self.current_db.get_custom_db_contxt_session(self.current_db_engine) as db:
+                db_user = db.query(User).filter(User.username == username, User.is_active == True).first()
 
-    def activate_user(self, db: Session, db_user):
+                if not db_user:
+                    raise InactiveUser("No user was found with this username.")
+
+                db_user.is_active = False
+                db_user.updated_at = datetime.now(UTC)
+                db.commit()
+                db.refresh(db_user)
+                return db_user
+        except DBException as e:
+            raise DBException(f"Could not delete user due to {str(e)}")
+
+    def activate_user(self, db_user):
         try:
-            db_user: User
-            db_user.is_active = True
-            db_user.updated_at = datetime.now(UTC)
-            db.commit()
-            db.refresh(db_user)
-            return db_user
-        except SQLAlchemyError as e:
-            raise DBException(f"Could not activate user due to {e}")
+            with self.current_db.get_custom_db_contxt_session(self.current_db_engine) as db:
+                db_user: User
+                db_user.is_active = True
+                db_user.updated_at = datetime.now(UTC)
+                db.commit()
+                db.refresh(db_user)
+                return db_user
+        except DBException as e:
+            raise DBException(f"Could not activate user due to {str(e)}")

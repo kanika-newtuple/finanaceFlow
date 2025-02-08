@@ -56,14 +56,16 @@ file_handler.setFormatter(file_formatter)
 logger.addHandler(file_handler)
 
 
-OTEL_AGENT_HOSTNAME = os.getenv("OTEL_AGENT_HOSTNAME", "localhost")
-OTEL_AGENT_PORT = int(os.getenv("OTEL_AGENT_PORT", "4317"))
+OTEL_AGENT_HOSTNAME = os.getenv("OTEL_AGENT_HOSTNAME")
+OTEL_AGENT_PORT = int(os.getenv("OTEL_AGENT_PORT", 4317))
 
 trace.set_tracer_provider(TracerProvider())
-tracer_provider: TracerProvider = trace.get_tracer_provider()
-otlp_exporter = OTLPSpanExporter(endpoint=f"{OTEL_AGENT_HOSTNAME}:{OTEL_AGENT_PORT}", insecure=True)
-span_processor = BatchSpanProcessor(otlp_exporter)
-tracer_provider.add_span_processor(span_processor)
+
+if OTEL_AGENT_HOSTNAME and OTEL_AGENT_PORT:
+    tracer_provider: TracerProvider = trace.get_tracer_provider()
+    otlp_exporter = OTLPSpanExporter(endpoint=f"{OTEL_AGENT_HOSTNAME}:{OTEL_AGENT_PORT}", insecure=True)
+    span_processor = BatchSpanProcessor(otlp_exporter)
+    tracer_provider.add_span_processor(span_processor)
 tracer = trace.get_tracer(__name__)
 
 

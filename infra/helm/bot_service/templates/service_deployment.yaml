@@ -28,7 +28,7 @@ spec:
       containers:
       - name: {{ .name }}
         image: {{ .imageName }}:{{ $.Values.releases.version }}
-        imagePullPolicy: Always
+        imagePullPolicy: IfNotPresent
         env:
         - name: PORT
           value: {{ .port | quote }}
