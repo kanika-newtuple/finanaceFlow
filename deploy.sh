@@ -9,7 +9,6 @@ fetch_latest_changes(){
     git config user.name "deploy"
 
     # fetch latest changes on current working branch
-    ls
     branch=$(git rev-parse --abbrev-ref HEAD)
     echo "Fetching & pulling latest code on $1";
     git pull origin $1

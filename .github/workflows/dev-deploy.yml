@@ -75,7 +75,7 @@ jobs:
           script: |
             echo "Starting DEV deployment.."
             cd ${{ secrets.REPO_PATH_DEV }}
-            ./deploy.sh fetch_latest_changes main
+            ./deploy.sh fetch_latest_changes ${{ secrets.DEV_BRANCH }}
 
   build_deploy:
     runs-on: ubuntu-latest
@@ -121,8 +121,8 @@ jobs:
                 exit 1
             fi
 
-            # if [ $FRONTEND_CODE != 200 ]
-            # then
-            #     echo "FAILURE with status $FRONTEND_CODE, frontend not reachable"
-            #     exit 1
-            # fi
+            if [ $FRONTEND_CODE != 200 ]
+            then
+                echo "FAILURE with status $FRONTEND_CODE, frontend not reachable"
+                exit 1
+            fi

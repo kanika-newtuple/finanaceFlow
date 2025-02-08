@@ -114,7 +114,7 @@ repos:
     rev: 1.7.0  
     hooks:
       - id: interrogate
-        args: [-vv, -I, --fail-under=80]
+        args: [-vv, -I, --fail-under=80, --omit-covered-files]
         exclude: ^init/
         pass_filenames: false
 

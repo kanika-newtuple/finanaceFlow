@@ -1,4 +1,5 @@
 GIT_ROOT := $(shell git rev-parse --show-toplevel)
+GIT_BRANCH_RELEASE := $(shell git describe --tags --abbrev=0)
 INFRA_ROOT := $(GIT_ROOT)/infra
 RELEASE_VERSION := latest
 VERSION := 0.0.1
@@ -7,14 +8,14 @@ AKS_CLUSTER_NAME := GenAI-AKS
 AKS_RESOURCE_GROUP := GenAI
 BOT_SERVICE_REPO_URL := $(REGISTRY_NAME).azurecr.io/bot-api-service
 TESSERACT_REPO_URL := $(REGISTRY_NAME).azurecr.io/tesseract
-NAMESPACE := pcr
+NAMESPACE := ff
 
 AZ_FUNCTION_PROCESSOR_APP_NAME :=  GenAI-file-processor
 AZ_FUNCTION_QUEUER_APP_NAME :=  GenAI-file-queuer
 AZ_DOC_PROCESSOR_CONTAINER_APP_JOB := document-processor-job
 
-acr-login:
-	az acr login --name $(REGISTRY_NAME)
+# acr-login:
+# 	az acr login --name $(REGISTRY_NAME)
 
 aks-login:
 	az aks get-credentials --resource-group $(AKS_RESOURCE_GROUP) --name $(AKS_CLUSTER_NAME)
@@ -25,6 +26,7 @@ az-publish-function:
 
 build-bot-service:
 	docker build --no-cache --progress=plain --platform=linux/amd64 -t bot_service:${VERSION} -f ${GIT_ROOT}/bot_service/dockerfiles/api.Dockerfile ${GIT_ROOT}/bot_service
+	docker tag bot_service:${VERSION} bot_service:${RELEASE_VERSION}
 
 build-tesseract:
 	docker build --no-cache --progress=plain --platform=linux/amd64 -t tesseract:${VERSION} -f ${GIT_ROOT}/bot_service/dockerfiles/tesseract.Dockerfile ${GIT_ROOT}/bot_service
@@ -54,9 +56,6 @@ deploy-doc-processor:
 deploy-bot-service:
 	cd ${GIT_ROOT}/infra/helm/bot_service && helm upgrade -i bot-service ${INFRA_ROOT}/helm/bot_service -f ${INFRA_ROOT}/helm/bot_service/values.yaml --namespace ${NAMESPACE} --create-namespace --debug --wait --set releases.version=${RELEASE_VERSION}
 
-deploy-tesseract:
-	cd ${GIT_ROOT}/infra/helm/tesseract && helm upgrade -i tesseract ${INFRA_ROOT}/helm/tesseract -f ${INFRA_ROOT}/helm/tesseract/values.yaml --namespace ${NAMESPACE} --create-namespace --debug --wait --set releases.version=${RELEASE_VERSION}
-
 deploy-langfuse:
 	cd ${GIT_ROOT}/infra/helm/langfuse-k8s  && helm dependency build
 	cd ${GIT_ROOT}/infra/helm/langfuse-k8s && helm upgrade -i langfuse-k8s ${INFRA_ROOT}/helm/langfuse-k8s -f ${INFRA_ROOT}/helm/langfuse-k8s/values.yaml --namespace ${NAMESPACE} --create-namespace --debug --wait --set releases.version=${RELEASE_VERSION}
@@ -77,9 +76,6 @@ deploy-pushgateway:
 
 deploy-bot-service-lb:
 	kubectl expose deployment bot-service-deployment  --type=LoadBalancer --name=bot-service-dev-lb --port=80 --target-port=8081 -n ${NAMESPACE}
-
-deploy-tesseract-lb:
-	kubectl expose deployment tesseract-deployment  --type=LoadBalancer --name=tesseract-lb --port=80 --target-port=8000 -n ${NAMESPACE}
 
 deploy-langfuse-lb:
 	kubectl expose deployment langfuse-k8s  --type=LoadBalancer --name=langfuse-k8s-lb --port=80 --target-port=3000 -n ${NAMESPACE}

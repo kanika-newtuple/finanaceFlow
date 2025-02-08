@@ -37,8 +37,7 @@ class UserRestController:
         is_correct_username, is_correct_password = False, False
 
         try:
-            with self.current_db.get_custom_db_contxt_session(self.current_db_engine) as db_session:
-                db_user = self.user_service_manager.get_active_user(db=db_session, username=credentials.username)
+            db_user = self.user_service_manager.get_active_user(username=credentials.username)
         except InactiveUser as e:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -73,10 +72,9 @@ class UserRestController:
         async def create_user(request: Request, user_create_request: UserCreateRequest = Depends()):  # noqa: F841
             try:
                 with OPERATION_TIME.labels(request.url.path, "api").time():
-                    with self.current_db.get_custom_db_contxt_session(self.current_db_engine) as db_session:
-                        user = self.user_service_manager.add_user(db_session, user_create_request)
-                        REQUEST_COUNT.labels(request.method, request.url.path, status.HTTP_200_OK).inc()
-                        return user  # noqa: ASYNC910
+                    user = self.user_service_manager.add_user(user_create_request)
+                    REQUEST_COUNT.labels(request.method, request.url.path, status.HTTP_200_OK).inc()
+                    return user  # noqa: ASYNC910
 
             except (UserExists, DBException) as e:
                 REQUEST_COUNT.labels(request.method, request.url.path, status.HTTP_400_BAD_REQUEST).inc()
@@ -96,10 +94,9 @@ class UserRestController:
         async def get_user(request: Request, user: Annotated[User, Depends(self.get_current_username)]):
             try:
                 with OPERATION_TIME.labels(request.url.path, "api").time():
-                    with self.current_db.get_custom_db_contxt_session(self.current_db_engine) as db_session:
-                        db_user = self.user_service_manager.get_user(db=db_session, username=user.username)
-                        REQUEST_COUNT.labels(request.method, request.url.path, status.HTTP_200_OK).inc()
-                        return db_user  # noqa: ASYNC910
+                    db_user = self.user_service_manager.get_user(username=user.username)
+                    REQUEST_COUNT.labels(request.method, request.url.path, status.HTTP_200_OK).inc()
+                    return db_user  # noqa: ASYNC910
 
             except (InactiveUser, DBException) as e:
                 REQUEST_COUNT.labels(request.method, request.url.path, status.HTTP_400_BAD_REQUEST).inc()
@@ -119,10 +116,9 @@ class UserRestController:
             try:
 
                 with OPERATION_TIME.labels(request.url.path, "api").time():
-                    with self.current_db.get_custom_db_contxt_session(self.current_db_engine) as db_session:
-                        db_user = self.user_service_manager.delete_user(db=db_session, username=username)
-                        REQUEST_COUNT.labels(request.method, request.url.path, status.HTTP_200_OK).inc()
-                        return db_user  # noqa: ASYNC910
+                    db_user = self.user_service_manager.delete_user(username=username)
+                    REQUEST_COUNT.labels(request.method, request.url.path, status.HTTP_200_OK).inc()
+                    return db_user  # noqa: ASYNC910
 
             except (InactiveUser, DBException) as e:
                 REQUEST_COUNT.labels(request.method, request.url.path, status.HTTP_400_BAD_REQUEST).inc()
