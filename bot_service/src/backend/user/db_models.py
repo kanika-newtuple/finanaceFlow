@@ -37,14 +37,14 @@ class UserModelService:
         self.current_db = self.database_manager.postgres_db_service()
         self.current_db_engine = self.current_db.engine
 
-        # try:
-        if Base:
-            logger.critical("Trying creating base tables for users..")
-            Base.metadata.create_all(bind=self.current_db_engine)
+        try:
+            if Base:
+                logger.critical("Trying creating base tables for users..", extra={"tags": "create_base_tables"})
+                Base.metadata.create_all(bind=self.current_db_engine)
 
-        # except BaseException as e:
-        #     error = {"ERROR": e}
-        #     logger.critical(f"Could not create base tables for users due to \n {error}, db operations won't work!", exc_info=1)
+        except BaseException as e:
+            error = {"ERROR": e}
+            logger.critical(f"Could not create base tables for users due to \n {error}, db operations won't work!", exc_info=1)
 
     def get_user(self, username: str = None):
         """

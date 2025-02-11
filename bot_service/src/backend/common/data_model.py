@@ -1,4 +1,4 @@
-from enum import Enum
+from enum import Enum, StrEnum
 from typing import Any, Optional
 
 from pydantic import BaseModel as PydanticBaseModel
@@ -6,6 +6,13 @@ from pydantic import ConfigDict
 
 
 class ExtendedEnum(Enum):
+
+    @classmethod
+    def list(cls):
+        return list(map(lambda c: c.value, cls))
+
+
+class ExtendedStrEnum(Enum):
 
     @classmethod
     def list(cls):
@@ -240,53 +247,58 @@ class LangfuseMetaData(BaseModel):
     debug_langfuse: Optional[bool] = None
 
 
-class Roles(ExtendedEnum):
+class Roles(ExtendedStrEnum):
     "Represents roles"
 
-    admin: str = "Admin"
-    basic: str = "Basic"
-    Developer: str = "Developer"
+    admin = "Admin"
+    basic = "Basic"
+    Developer = "Developer"
 
 
-class LLMProvider(ExtendedEnum):
+class LLMProvider(ExtendedStrEnum):
     "Represents provider"
 
-    openai: str = "openai"
-    bedrock: str = "bedrock"
-    azure_openai: str = "azure_openai"
-    perplexity_ai: str = "perplexity_ai"
-    anthropic_ai: str = "anthropic_ai"
-    gemini_ai: str = "gemini_ai"
-    lite_llm: str = "lite_llm"
+    openai = "openai"
+    bedrock = "bedrock"
+    azure_openai = "azure_openai"
+    perplexity_ai = "perplexity_ai"
+    anthropic_ai = "anthropic_ai"
+    gemini_ai = "gemini_ai"
+    lite_llm = "lite_llm"
 
 
-class LiteLLMModels(ExtendedEnum):
+class LiteLLMModels(ExtendedStrEnum):
     "Represents lite llm models"
 
+    gpt_4o = "gpt-4o"
+    gpt_4o_mini = "gpt-4o-mini"
+    bedrock_anthropic_claude_sonnet = "bedrock/anthropic.claude-3-5-sonnet-20240620-v1:0"
+    gemini_flash = "gemini/gemini-2.0-flash"
 
-class LangfusePrompt(ExtendedEnum):
+
+class LangfusePrompt(ExtendedStrEnum):
     "Represents llm prompts"
 
-    search_eval: str = "search_eval"
-    search_eval_compare: str = "search_eval_compare"
-    global_search: str = "global_search"
-    generator: str = "generator"
-    sql_agent: str = "sql_agent"
-    mongo_agent: str = "mongo_agent"
+    search_eval = "search_eval"
+    search_eval_compare = "search_eval_compare"
+    global_search = "global_search"
+    generator = "generator"
+    sql_agent = "sql_agent"
+    mongo_agent = "mongo_agent"
 
 
-class DatabaseType(ExtendedEnum):
+class DatabaseType(ExtendedStrEnum):
     "Represents different database types"
 
-    postgresql: str = "postgresql"
-    pinecone: str = "pinecone"
-    azure_ai_search: str = "azure_ai_search"
-    chroma: str = "chroma"
+    postgresql = "postgresql"
+    pinecone = "pinecone"
+    azure_ai_search = "azure_ai_search"
+    chroma = "chroma"
 
 
-class VectorDBModel(ExtendedEnum):
-    pinecone: str = "pinecone"
-    azure_ai_search: str = "azure_ai_search"
+class VectorDBModel(ExtendedStrEnum):
+    pinecone = "pinecone"
+    azure_ai_search = "azure_ai_search"
 
 
 # endregion

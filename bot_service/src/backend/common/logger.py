@@ -5,8 +5,21 @@ from logging.handlers import TimedRotatingFileHandler
 
 from opentelemetry import trace
 from opentelemetry._logs import set_logger_provider
-from opentelemetry.exporter.otlp.proto.grpc._log_exporter import OTLPLogExporter
-from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
+from opentelemetry.exporter.otlp.proto.grpc._log_exporter import (
+    Compression,
+)
+from opentelemetry.exporter.otlp.proto.grpc._log_exporter import (
+    OTLPLogExporter as OTLPGRPCLogExporter,
+)
+from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import (
+    OTLPSpanExporter as OTLPGRPCSpanExporter,
+)
+from opentelemetry.exporter.otlp.proto.http._log_exporter import (
+    OTLPLogExporter as OTLPHTTPLogExporter,
+)
+from opentelemetry.exporter.otlp.proto.http.trace_exporter import (
+    OTLPSpanExporter as OTLPHTTPSpanExporter,
+)
 from opentelemetry.sdk._logs import LoggerProvider, LoggingHandler
 from opentelemetry.sdk._logs.export import BatchLogRecordProcessor
 from opentelemetry.sdk.resources import Resource
@@ -56,16 +69,17 @@ file_handler.setFormatter(file_formatter)
 logger.addHandler(file_handler)
 
 
-OTEL_AGENT_HOSTNAME = os.getenv("OTEL_AGENT_HOSTNAME")
+OTEL_AGENT_HOSTNAME = os.getenv("OTEL_AGENT_HOSTNAME", "http://localhost")
 OTEL_AGENT_PORT = int(os.getenv("OTEL_AGENT_PORT", 4317))
 
 trace.set_tracer_provider(TracerProvider())
 
-if OTEL_AGENT_HOSTNAME and OTEL_AGENT_PORT:
-    tracer_provider: TracerProvider = trace.get_tracer_provider()
-    otlp_exporter = OTLPSpanExporter(endpoint=f"{OTEL_AGENT_HOSTNAME}:{OTEL_AGENT_PORT}", insecure=True)
-    span_processor = BatchSpanProcessor(otlp_exporter)
-    tracer_provider.add_span_processor(span_processor)
+# if OTEL_AGENT_HOSTNAME and OTEL_AGENT_PORT:
+tracer_provider: TracerProvider = trace.get_tracer_provider()
+# otlp_span_exporter = OTLPHTTPSpanExporter(endpoint=f"{OTEL_AGENT_HOSTNAME}:{OTEL_AGENT_PORT}/v1/logs")
+otlp_span_exporter = OTLPGRPCSpanExporter(endpoint=f"{OTEL_AGENT_HOSTNAME}:{OTEL_AGENT_PORT}", insecure=True, compression=Compression.Gzip.value)
+span_processor = BatchSpanProcessor(otlp_span_exporter)
+tracer_provider.add_span_processor(span_processor)
 tracer = trace.get_tracer(__name__)
 
 
@@ -122,7 +136,8 @@ logger_provider = LoggerProvider(resource)
 set_logger_provider(logger_provider)
 
 # Create the OTLP log exporter that sends logs to configured destination
-exporter = OTLPLogExporter(endpoint=f"{OTEL_AGENT_HOSTNAME}:{OTEL_AGENT_PORT}", insecure=True)
+# exporter = OTLPHTTPLogExporter(endpoint=f"{OTEL_AGENT_HOSTNAME}:{OTEL_AGENT_PORT}/v1/logs")
+exporter = OTLPGRPCLogExporter(endpoint=f"{OTEL_AGENT_HOSTNAME}:{OTEL_AGENT_PORT}", insecure=True, compression=Compression.Gzip.value)
 logger_provider.add_log_record_processor(BatchLogRecordProcessor(exporter))
 
 # Attach OTLP handler to root logger
@@ -131,11 +146,11 @@ handler.setLevel(logging.DEBUG)
 handler.setFormatter(SpanFormatter(otel_fmt_file))
 
 # ENABLE/DISABLE JSON LOGGER
-# handler.setFormatter(CustomJsonFormatter(otel_fmt_file))
-# shell_handler.setFormatter(CustomJsonFormatter(otel_fmt_file))
+handler.setFormatter(CustomJsonFormatter(otel_fmt_file))
+shell_handler.setFormatter(CustomJsonFormatter(otel_fmt_file))
 
 logger.addHandler(handler)
 logger.addHandler(shell_handler)
 
 # UNCOMMENT TO ENABLE OTEL EXPORTER
-logger_provider.shutdown()
+# logger_provider.shutdown()

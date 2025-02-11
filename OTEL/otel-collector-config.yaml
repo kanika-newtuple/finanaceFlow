@@ -14,18 +14,16 @@ receivers:
           scheme: http
           static_configs:
             - targets: ['bot-api-service:8081']
-exporters:
-  datadog:
-    api:
-      key: "75851a5b73752e"
-      site: "us5.datadoghq.com"
 
-    metrics:
-      resource_attributes_as_tags: true
-      instrumentation_scope_metadata_as_tags: false
-    host_metadata:
-      enabled: true
-      hostname_source: first_resource
+processors:
+  batch:
+
+exporters:
+
+  otlphttp/loki:
+    endpoint: http://loki:3100/otlp
+    tls:
+      insecure: true
 
 extensions:
   health_check:
@@ -38,10 +36,11 @@ service:
     #   receivers: [otlp]
     #   processors: [batch]
     #   exporters: [datadog, datadog/connector]
-    metrics:
-      receivers: [prometheus]
-      exporters: [datadog]
+    # metrics:
+    #   receivers: [prometheus]
+    #   exporters: [datadog]
       # processors: [batch]
     logs:
       receivers: [otlp]
-      exporters: [datadog]
+      processors: [batch]
+      exporters: [otlphttp/loki]
