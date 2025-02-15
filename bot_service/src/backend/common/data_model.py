@@ -219,6 +219,23 @@ class Configuration(BaseModel):
     langfuse_configuration: LangfuseConfiguration
     pocketbase_configuration: PocketBaseConfiguration
 
+class LangfuseMetaData(BaseModel):
+    generation_name: str = None
+    generation_id: str = None
+    parent_observation_id: str = None
+    version: str = None
+    trace_user_id: str = None
+    session_id: str = None
+    tags: list[str] = None
+    trace_name: str = None
+    trace_id: str = None
+    trace_metadata: dict[str, Any] = None
+    trace_version: str = None
+    trace_release: str = None
+    existing_trace_id: Optional[str] = None
+    update_trace_keys: Optional[list[str]] = None
+    debug_langfuse: Optional[bool] = None
+    mask_input: Optional[bool] = None
 
 class QueryContext(BaseModel):
     """Represents the query context"""
@@ -229,23 +246,6 @@ class QueryContext(BaseModel):
 
 
 # region Constants
-class LangfuseMetaData(BaseModel):
-    generation_name: str
-    generation_id: str
-    parent_observation_id: str
-    version: str
-    trace_user_id: str
-    session_id: str
-    tags: list[str]
-    trace_name: str
-    trace_id: str
-    trace_metadata: dict[str, Any]
-    trace_version: str
-    trace_release: str
-    existing_trace_id: Optional[str] = None
-    update_trace_keys: Optional[list[str]] = None
-    debug_langfuse: Optional[bool] = None
-
 
 class Roles(ExtendedStrEnum):
     "Represents roles"
