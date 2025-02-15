@@ -1,8 +1,8 @@
 GIT_ROOT := $(shell git rev-parse --show-toplevel)
 GIT_BRANCH_RELEASE := $(shell git describe --tags --abbrev=0)
 INFRA_ROOT := $(GIT_ROOT)/infra
-RELEASE_VERSION := latest
-VERSION := 0.0.1
+RELEASE_VERSION := ${GIT_BRANCH_RELEASE}
+VERSION := latest
 REGISTRY_NAME := GenAI-ACR
 AKS_CLUSTER_NAME := GenAI-AKS
 AKS_RESOURCE_GROUP := GenAI
@@ -50,7 +50,7 @@ deploy-doc-processor:
 		--polling-interval 60 \
 		--scale-rule-name azure-queue \
 		--scale-rule-type azure-servicebus \
-		--scale-rule-metadata namespace=newtuple queueName=pcr-dev messageCount=12 \
+		--scale-rule-metadata namespace=newtuple queueName=qu-dev messageCount=12 \
 		--scale-rule-auth connection=queue
 
 deploy-bot-service:
@@ -118,4 +118,4 @@ mega-deploy-pushgateway:
 	kubectl rollout restart deployment/pushgateway-deployment -n ${NAMESPACE}
 
 
-# kubectl exec -it tesseract-deployment-5b5c576b55-v5c6w -n pcr -- bash
+# kubectl exec -it tesseract-deployment-5b5c576b55-v5c6w -n ns -- bash
