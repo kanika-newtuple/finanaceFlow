@@ -153,4 +153,4 @@ logger.addHandler(handler)
 logger.addHandler(shell_handler)
 
 # UNCOMMENT TO ENABLE OTEL EXPORTER
-# logger_provider.shutdown()
+logger_provider.shutdown()

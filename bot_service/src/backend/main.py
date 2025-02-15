@@ -47,6 +47,11 @@ user_rest_controller.prepare(app_router)
 metrics_service_manager = MetricsService()
 metrics_rest_controller = MetricsRestController(metrics_service_manager).prepare(app_router, Depends(user_rest_controller.get_current_username))
 
+from dummy.controller import DummyRestController
+from dummy.manager import DummyService
+
+dummy_rest_controller = DummyRestController(DummyService(llm_service_manager)).prepare(app_router)
+
 app = FastAPI()
 app.add_middleware(GZipMiddleware, minimum_size=1000, compresslevel=5)
 # app.add_middleware(HTTPSRedirectMiddleware)

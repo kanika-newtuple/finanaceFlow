@@ -83,9 +83,10 @@ class LLMServiceManager:
     def litellm_service(self):
         return self._litellm_service
 
-    def get_service(self, llm_provider: LLMProvider, model_name: str, **kwargs):
+    def get_service(self, llm_provider: LLMProvider, model_name: str, **kwargs) -> LiteLLMService:
         match llm_provider:
 
             case LLMProvider.lite_llm:
+                self._litellm_service = LiteLLMService()
                 self._litellm_service.set_client_by_model(model_name=model_name, **kwargs)
-                return self.litellm_service()
+                return self._litellm_service
