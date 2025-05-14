@@ -15,10 +15,22 @@ create_deployment_group() {
 # Create deployment user using a function
 create_deployment_user() {
     echo -e "Creating Deployment user.."
-    sudo useradd -m -s /bin/bash $deployment_user
+    
+    # Create group if it doesn't exist
+    if ! getent group $deployment_group >/dev/null; then
+        sudo groupadd $deployment_group
+    fi
+
+    # Create user and assign primary group
+    sudo useradd -m -s /bin/bash -g $deployment_group $deployment_user
+
+    # Add user to additional groups (optional)
     sudo usermod -aG $deployment_group $deployment_user
+
+    # Uncomment if you want to set a password manually
     # sudo passwd $deployment_user
 }
+
 
 # Create ssh key pair named deploy using the deployment user using a function
 create_ssh_key_pair() {
