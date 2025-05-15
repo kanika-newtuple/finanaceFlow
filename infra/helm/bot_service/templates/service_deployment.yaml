@@ -11,6 +11,11 @@ spec:
   selector:
     matchLabels:
       app: {{ .name }}
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 2        # Allow 1 extra pod during updates
+      maxUnavailable: 0  # Allow 0 pods to be unavailable during updates
   template:
     metadata:
       labels:
@@ -28,7 +33,7 @@ spec:
       containers:
       - name: {{ .name }}
         image: {{ .imageName }}:{{ $.Values.releases.version }}
-        imagePullPolicy: IfNotPresent
+        imagePullPolicy: Always
         env:
         - name: PORT
           value: {{ .port | quote }}
@@ -51,14 +56,21 @@ spec:
           httpGet:
             path: {{ .livenessProbePath | quote }}
             port: {{ .port }}
-          initialDelaySeconds: 30
-          periodSeconds: 10
+          initialDelaySeconds: {{ .livenessProbe.initialDelaySeconds }}
+          periodSeconds: {{ .livenessProbe.periodSeconds }}
+          timeoutSeconds: {{ .livenessProbe.timeoutSeconds }}
         readinessProbe:
           httpGet:
             path: {{ .readinessProbePath | quote }}
             port: {{ .port }}
-          initialDelaySeconds: 30
-          periodSeconds: 10
+          initialDelaySeconds: {{ .readinessProbe.initialDelaySeconds }}
+          periodSeconds: {{ .readinessProbe.periodSeconds }}
+          timeoutSeconds: {{ .readinessProbe.timeoutSeconds }}
+      {{- if .tolerations.enabled }}
+      tolerations:
+        - key: {{ .tolerations.key | quote }}
+          operator: {{ .tolerations.operator | quote }}
+      {{- end }}
 ---
 {{- end }}
 {{- end }}

@@ -11,30 +11,35 @@ metadata:
   labels:
     app: {{ .name }}
 spec:
-  ingressClassName: nginx
+  ingressClassName: {{ .ingress.ingressClassName | quote }}
   rules:
   {{- if .ingress.host }}
   - host: {{ .ingress.host }}
     http:
       paths:
-      - path: "/"
+      - path: {{ .ingress.path_regex }}
         pathType: Prefix
         backend:
           service:
             name: {{ .name }}-service
             port:
               number: {{ .port | default 80 }}
-  {{- end }}
-  {{- if .ingress.path_regex }}
-  - http:
-      paths:
-      - path: {{ .ingress.path_regex }}
-        pathType: ImplementationSpecific
+      {{- if .ingress.specific_paths }}
+      - path: {{ .ingress.specific_paths.docs_path }}
+        pathType: Prefix
         backend:
           service:
             name: {{ .name }}-service
             port:
               number: {{ .port | default 80 }}
+      - path: {{ .ingress.specific_paths.docs_json_path }}
+        pathType: Prefix
+        backend:
+          service:
+            name: {{ .name }}-service
+            port:
+              number: {{ .port | default 80 }}
+      {{- end }}
   {{- end }}
 {{- end }}
 ---
