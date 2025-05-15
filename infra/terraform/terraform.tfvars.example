@@ -1,0 +1,116 @@
+# Core Configuration
+prefix      = "genadocs"
+environment = "dev"
+location    = "East US"
+
+# Azure Authentication
+azure_subscription_id = "your-subscription-id"
+azure_tenant_id       = "your-tenant-id"
+
+# Service Bus Configuration
+servicebus_sku      = "Standard"
+servicebus_capacity = 1
+short_doc_queue_name = "short-doc-queue" 
+long_doc_queue_name  = "long-doc-queue"
+enable_queue_partitioning = true
+queue_max_size_mb = 1024
+queue_message_ttl = "P14D"
+max_delivery_count = 10
+# Note: dead_lettering_on_message_expiration should be set in the resource definition
+
+
+# Document Processing Configuration
+doc_processing_threshold = 10
+
+# Kubernetes Configuration
+kubernetes_version = "1.29"
+node_count = 2
+min_node_count = 1
+max_node_count = 1
+vm_size = "Standard_DS2_v2"
+
+# Cosmos DB for PostgreSQL Configuration
+postgres_version        = "11"
+postgres_admin_username = "citus"
+postgres_admin_password = "YourStrongP@ssword123!" # Change before use
+postgres_db_name        = "genadocs_db"
+postgres_storage_mb     = 131072
+
+# Azure Functions Configuration
+function_sku = "P1v2"
+enable_function_vnet_integration = true
+openai_api_key = "your-openai-api-key-here" # Change before use
+
+# Grafana & Prometheus Configuration
+grafana_public_access = false
+grafana_admin_object_ids = ["00000000-0000-0000-0000-000000000000"] # Replace with actual Azure AD Object IDs
+enable_prometheus_alerts = true
+
+# Container App Job Configuration
+doc_processor_image_version = "v1"
+doc_processor_job_parallelism = 50
+doc_processor_job_max_executions = 8
+doc_processor_job_scale_message_count = 5
+
+# Monitoring Configuration
+alert_email = "admin@example.com"
+
+# Short and Long Document Processing Configurations
+short_doc_processing_threshold = 8
+long_doc_processing_threshold = 8
+
+# Backend Authentication
+backend_admin_user = "admin"
+backend_admin_pw = "admin"
+
+# Jump Server Configuration
+jumpbox_admin_username = "adminuser"
+jumpbox_ssh_public_key = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQC..."
+jumpbox_ssh_public_key_path = "~/.ssh/id_rsa_work.pub"
+allowed_ssh_source_ips = ["1.2.3.4/32"] # Replace with your IP address
+
+# APIM Configuration
+apim_publisher_name = "GenAIDocs"
+apim_publisher_email = "admin@example.com"
+apim_sku_name = "Developer_1"
+
+# SQL Server Configuration
+sql_admin_username = "sqladmin"
+sql_admin_password = "YourStrongSqlP@ssword123!" # Change before use
+sql_database_sku = "S1"
+sql_database_max_size_gb = 32
+
+# Azure OpenAI Configuration
+openai_location = "East US"
+openai_sku = "S0"
+gpt4o_capacity = 1
+embeddings_capacity = 1
+
+# Vnet Configuration
+vnet_address_space = "10.0.0.0/16"
+
+# Network address prefixes
+aks_subnet_address_prefix = "10.0.0.0/24"
+function_subnet_address_prefix = "10.0.2.0/24"
+servicebus_address_prefix = "10.0.3.0/24"
+acr_address_prefix = "10.0.5.0/24"
+postgres_subnet_address_prefix = "10.0.6.0/24"
+container_app_subnet_address_prefix = "10.0.7.0/24"
+sql_subnet_address_prefix = "10.0.8.0/24"
+container_app_pe_subnet_address_prefix = "10.0.9.0/24"
+openai_subnet_address_prefix = "10.0.18.0/24"
+storage_subnet_address_prefix = "10.0.19.0/24"
+
+# AKS network configuration
+aks_service_cidr = "10.1.0.0/16"
+aks_dns_service_ip = "10.1.0.10"
+aks_docker_bridge_cidr = "172.17.0.1/16"
+
+
+# Tags
+tags = {
+  Project     = "GENAIDocs"
+  Environment = "Development"
+  ManagedBy   = "Terraform"
+  Team        = "AI"
+}
