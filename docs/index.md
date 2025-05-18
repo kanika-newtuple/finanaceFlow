@@ -11,7 +11,8 @@
         4.OpenTelemetery.md # Standard for collection obs data
         5.Kubernetes.md # Deploy your application to K8
         6.Setting up Nginx.md # Setup reverse proxy using nginx
-        7.IAC.md # Provision & manage using infrastuction as a code using opentofu
+        7.Setting up Reverse proxy using Treafik.md # Setup reverse proxy using treafik
+        8.IAC.md # Provision & manage using infrastuction as a code using opentofu
         
         ...       # Other markdown pages, images and other files.
 
@@ -26,9 +27,10 @@ Here's how to navigate through this documentation:
 3. Understand how to implement application monitoring by following [Observability](./3.Observability.md).
 4. Explore the standardized approach to collecting observability data using [OpenTelemetry](./4.OpenTelemetery.md).
 5. Deploy your application to Kubernetes by following [Kubernetes](./5.Kubernetes.md).
-6. Setup reverse proxy using nginx for your application by following [Reverse proxy](./6.Setting%20up%20Nginx.md).
-7. Provision & manage using infrastuction as a code using opentofu [IAC](./7.IAC.md).
-8. Additional documentation files are available for more specific topics and features.
+6. Setup reverse proxy using nginx for your application by following [Reverse proxy using Nginx](./6.Setting%20up%20Reverse%20proxy%20using%20Nginx%20copy.md).
+7. Setup reverse proxy using traefik for your application by following [Reverse proxy using Traefik](./7.Setting%20up%20Reverse%20proxy%20using%20Traefik.md).
+8. Provision & manage using infrastuction as a code using opentofu [IAC](./8.Infrastructure%20as%20Code.md).
+9. Additional documentation files are available for more specific topics and features.
 
 ## Commands to load the documentation locally
 

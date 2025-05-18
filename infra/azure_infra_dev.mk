@@ -1,4 +1,17 @@
 # ----------------------
+# COLORS
+# ----------------------
+# ANSI color codes
+GREEN := \033[0;32m
+YELLOW := \033[0;33m
+RED := \033[0;31m
+BLUE := \033[0;34m
+PURPLE := \033[0;35m
+CYAN := \033[0;36m
+NC := \033[0m # No Color
+BOLD := \033[1m
+
+# ----------------------
 # ROOT CONFIG
 # ----------------------
 GIT_ROOT := $(shell git rev-parse --show-toplevel)
@@ -8,14 +21,13 @@ ETC_ROOT := $(GIT_ROOT)/bot_service/src/backend/etc
 RELEASE_VERSION := $(shell git describe --tags --abbrev=0)
 VERSION := latest
 
-# If your ACR is truly named "PCRGenAIACR" in Azure, its domain is "pcrgeniacr.azurecr.io"
-REGISTRY_NAME := docsprodacr2
+REGISTRY_NAME := docsdevacr2
 
-AKS_CLUSTER_NAME := docs-prod-aks
-AKS_RESOURCE_GROUP := docs-prod-rg
+AKS_CLUSTER_NAME := docs-dev-aks
+AKS_RESOURCE_GROUP := docs-dev-rg
 BOT_SERVICE_REPO_URL := $(REGISTRY_NAME).azurecr.io/bot-api-service
-NAMESPACE := pcr-prod
-KEY_VAULT_NAME := docs-prod-kv
+NAMESPACE := pcr-dev
+KEY_VAULT_NAME := docs-dev-kv
 
 BOT_SERVICE_REPO_URL := $(shell echo ${REGISTRY_NAME}.azurecr.io/bot-api-service:${RELEASE_VERSION} | tr '[:upper:]' '[:lower:]')
 DOC_PROCESSOR_CONTAINER_APP_JOB_REPO_URL := $(shell echo ${REGISTRY_NAME}.azurecr.io/doc-processor:${RELEASE_VERSION} | tr '[:upper:]' '[:lower:]')
@@ -24,14 +36,14 @@ ENV_FILE := $(ETC_ROOT)/.env
 ENV_PAIRS := $(shell ./kv.sh parse_env_file $(ENV_FILE))
 
 
-AZ_FUNCTION_PROCESSOR_APP_NAME := docs-prod-GenAI-file-processor1
-AZ_FUNCTION_DEADLETTER_HANDLER_APP_NAME := docs-prod-GenAI-document-handler1
-AZ_DOC_PROCESSOR_CONTAINER_APP_JOB_SHORT := prod-shortdoc-processor-job
-AZ_DOC_PROCESSOR_CONTAINER_APP_JOB_LONG := prod-longdoc-processor-job
+AZ_FUNCTION_PROCESSOR_APP_NAME := docs-dev-GenAI-file-processor1
+AZ_FUNCTION_DEADLETTER_HANDLER_APP_NAME := docs-dev-GenAI-document-handler1
+AZ_DOC_PROCESSOR_CONTAINER_APP_JOB_SHORT := dev-shortdoc-processor-job
+AZ_DOC_PROCESSOR_CONTAINER_APP_JOB_LONG := dev-longdoc-processor-job
 
-QUEUE_NAMESPACE := docs-prod-sb-namespace
-SHORT_DOC_PROCESSING_QUEUE_NAME := docs-prod-short-doc-queue
-LONG_DOC_PROCESSING_QUEUE_NAME := docs-prod-long-doc-queue
+QUEUE_NAMESPACE := docs-dev-sb-namespace
+SHORT_DOC_PROCESSING_QUEUE_NAME := docs-dev-short-doc-queue
+LONG_DOC_PROCESSING_QUEUE_NAME := docs-dev-long-doc-queue
 SHORT_FORM_MESSAGE_COUNT := 15
 LONG_FORM_MESSAGE_COUNT := 1
 
@@ -41,13 +53,13 @@ LONG_FORM_MESSAGE_COUNT := 1
 # ----------------------
 
 get-release-version:
-	echo "Current realease: ${RELEASE_VERSION}"
+	@echo  "${BLUE}Current release:${NC} ${GREEN}${RELEASE_VERSION}${NC}"
 
 acr-login:
 	az acr login --name $(REGISTRY_NAME)
 
 aks-login:
-	az aks get-credentials --resource-group ${AKS_RESOURCE_GROUP} --name ${AKS_CLUSTER_NAME} --format azure --overwrite-existing
+	az aks get-credentials --resource-group ${AKS_RESOURCE_GROUP} --name ${AKS_CLUSTER_NAME} --format azure --overwritexisting
 	export KUBECONFIG=$HOME/.kube/config
 	kubelogin convert-kubeconfig -l azurecli
 
@@ -107,14 +119,14 @@ deploy-doc-processor:
 		--replica-retry-limit 1 \
 		--replica-completion-count 1 \
 		--parallelism 50 \
-		--min-executions 0 \
-		--max-executions 8 \
+		--minxecutions 0 \
+		--maxxecutions 8 \
 		--polling-interval 3600 \
 		--scale-rule-name azure-queue \
 		--scale-rule-type azure-servicebus \
 		--scale-rule-metadata namespace=${QUEUE_NAMESPACE} queueName=${SHORT_DOC_PROCESSING_QUEUE_NAME} messageCount=${SHORT_FORM_MESSAGE_COUNT} \
 		--scale-rule-auth connection=queue-connection \
-		--set-env-vars PROCESSING_MODE=short
+		--setnv-vars PROCESSING_MODE=short
 
 	
 	az containerapp job update \
@@ -127,14 +139,14 @@ deploy-doc-processor:
 		--replica-retry-limit 1 \
 		--replica-completion-count 1 \
 		--parallelism 50 \
-		--min-executions 0 \
-		--max-executions 8 \
+		--minxecutions 0 \
+		--maxxecutions 8 \
 		--polling-interval 4500 \
 		--scale-rule-name azure-queue \
 		--scale-rule-type azure-servicebus \
 		--scale-rule-metadata namespace=${QUEUE_NAMESPACE} queueName=${LONG_DOC_PROCESSING_QUEUE_NAME} messageCount=${LONG_FORM_MESSAGE_COUNT} \
 		--scale-rule-auth connection=queue-connection \
-		--set-env-vars PROCESSING_MODE=long
+		--setnv-vars PROCESSING_MODE=long
 
 deploy-bot-service:
 	cd ${GIT_ROOT}/infra/helm/bot_service && \
@@ -206,47 +218,68 @@ deploy-pushgateway-lb:
 
 .SILENT:
 update-vault-secrets:
-	echo "Updating secrets in ${KEY_VAULT_NAME} ..."
+	@echo  "${YELLOW}Updating secrets in ${BOLD}${KEY_VAULT_NAME}${NC} ..."
 	./kv.sh set_key_vault_secrets ${KEY_VAULT_NAME} ${ENV_FILE}
 
 .SILENT:
-update-doc-processor-env:
+update-doc-processornv:
 	az containerapp job update \
 		--resource-group ${AKS_RESOURCE_GROUP} \
 		--name ${AZ_DOC_PROCESSOR_CONTAINER_APP_JOB_SHORT} \
-		--set-env-vars ${ENV_PAIRS}
+		--setnv-vars ${ENV_PAIRS}
 
 	az containerapp job update \
 		--resource-group ${AKS_RESOURCE_GROUP} \
 		--name ${AZ_DOC_PROCESSOR_CONTAINER_APP_JOB_LONG} \
-		--set-env-vars ${ENV_PAIRS}
+		--setnv-vars ${ENV_PAIRS}
 
 
 # ----------------------
 # Mega / Composite Targets
 # ----------------------
 mega-deploy-bot-service:
-	make -f prod.mk acr-login
-	make -f prod.mk build-bot-service
-	make -f prod.mk push-docker-bot-service
-	make -f prod.mk deploy-bot-service
+	@echo  "${BOLD}${BLUE}====== DEPLOYING BOT SERVICE ======${NC}"
+	@echo  "${CYAN}Step 1/5:${NC} ${GREEN}ACR Login${NC}"
+	make -f dev.mk acr-login
+	@echo  "${CYAN}Step 2/5:${NC} ${GREEN}Building Bot Service${NC}"
+	make -f dev.mk build-bot-service
+	@echo  "${CYAN}Step 3/5:${NC} ${GREEN}Pushing Bot Service Docker Image${NC}"
+	make -f dev.mk push-docker-bot-service
+	@echo  "${CYAN}Step 4/5:${NC} ${GREEN}Deploying Bot Service${NC}"
+	make -f dev.mk deploy-bot-service
+	@echo  "${CYAN}Step 5/5:${NC} ${GREEN}Restarting Deployment${NC}"
 	kubectl rollout restart deployment/bot-service-deployment -n ${NAMESPACE}
+	@echo  "${BOLD}${GREEN}✓ Bot Service deployed successfully!${NC}"
 
 
 
 mega-deploy-doc-processor:
-	make -f prod.mk acr-login
-	make -f prod.mk build-doc-processor
-	make -f prod.mk push-docker-doc-processor
-	make -f prod.mk deploy-doc-processor
+	@echo  "${BOLD}${BLUE}====== DEPLOYING DOCUMENT PROCESSOR ======${NC}"
+	@echo  "${CYAN}Step 1/4:${NC} ${GREEN}ACR Login${NC}"
+	make -f dev.mk acr-login
+	@echo  "${CYAN}Step 2/4:${NC} ${GREEN}Building Document Processor${NC}"
+	make -f dev.mk build-doc-processor
+	@echo  "${CYAN}Step 3/4:${NC} ${GREEN}Pushing Document Processor Docker Image${NC}"
+	make -f dev.mk push-docker-doc-processor
+	@echo  "${CYAN}Step 4/4:${NC} ${GREEN}Deploying Document Processor${NC}"
+	make -f dev.mk deploy-doc-processor
+	@echo  "${BOLD}${GREEN}✓ Document Processor deployed successfully!${NC}"
 
 mega-deploy-pushgateway:
-	make -f prod.mk deploy-pushgateway
+	@echo  "${BOLD}${BLUE}====== DEPLOYING PUSHGATEWAY ======${NC}"
+	@echo  "${CYAN}Step 1/2:${NC} ${GREEN}Deploying Pushgateway${NC}"
+	make -f dev.mk deploy-pushgateway
+	@echo  "${CYAN}Step 2/2:${NC} ${GREEN}Restarting Deployment${NC}"
 	kubectl rollout restart deployment/pushgateway-deployment -n ${NAMESPACE}
+	@echo  "${BOLD}${GREEN}✓ Pushgateway deployed successfully!${NC}"
 
 mega-deploy-langfuse:
-	make -f prod.mk deploy-langfuse
+	@echo  "${BOLD}${BLUE}====== DEPLOYING LANGFUSE ======${NC}"
+	@echo  "${CYAN}Step 1/2:${NC} ${GREEN}Deploying Langfuse${NC}"
+	make -f dev.mk deploy-langfuse
+	@echo  "${CYAN}Step 2/2:${NC} ${GREEN}Restarting Deployment${NC}"
 	kubectl rollout restart deployment/langfuse-k8s -n ${NAMESPACE}
+	@echo  "${BOLD}${GREEN}✓ Langfuse deployed successfully!${NC}"
 
 # ----------------------
 # Test Targets
@@ -256,7 +289,7 @@ test-acr-access:
 	az acr repository list --name $(REGISTRY_NAME)
 
 test-aks-access:
-	make -f prod.mk aks-login
+	make -f dev.mk aks-login
 	kubectl get nodes -n $(NAMESPACE)
 	kubectl get pods -n $(NAMESPACE)
 
@@ -274,20 +307,62 @@ test-doc-processor:
 		--resource-group $(AKS_RESOURCE_GROUP)
 
 test-all:
-	@echo "Testing release..."
-	@make -f prod.mk get-release-version
-	@echo "Testing ACR access..."
-	@make -f prod.mk test-acr-access
-	@echo "\nTesting AKS access..."
-	@make -f prod.mk test-aks-access
-	# @echo "\nTesting Bot Service deployment..."
-	# @make -f prod.mk test-bot-service
-	@echo "\nTesting Document Processor..."
-	@make -f prod.mk test-doc-processor
+	@echo  "${BOLD}${CYAN}=== Testing release ===${NC}"
+	@make -f dev.mk get-release-version
+	@echo  "${BOLD}${CYAN}=== Testing ACR access ===${NC}"
+	@make -f dev.mk test-acr-access
+	@echo  "\n${BOLD}${CYAN}=== Testing AKS access ===${NC}"
+	@make -f dev.mk test-aks-access
+	# @echo  "\n${BOLD}${CYAN}=== Testing Bot Service deployment ===${NC}"
+	# @make -f dev.mk test-bot-service
+	@echo  "\n${BOLD}${CYAN}=== Testing Document Processor ===${NC}"
+	@make -f dev.mk test-doc-processor
 
 mega-deploy-all:
-	make -f prod.mk aks-login
-	make -f prod.mk test-all
-	make -f prod.mk az-publish-function
-	make -f prod.mk mega-deploy-bot-service
-	make -f prod.mk mega-deploy-doc-processor
+	@echo  "${BOLD}${PURPLE}========== MEGA DEPLOYMENT STARTED ===========${NC}"
+	@echo  "${CYAN}[1/5]${NC} ${GREEN}Logging into AKS${NC}"
+	make -f dev.mk aks-login
+	@echo  "${CYAN}[2/5]${NC} ${GREEN}Running tests${NC}"
+	make -f dev.mk test-all
+	@echo  "${CYAN}[3/5]${NC} ${GREEN}Publishing Azure Functions${NC}"
+	make -f dev.mk az-publish-function
+	@echo  "${CYAN}[4/5]${NC} ${GREEN}Deploying Bot Service${NC}"
+	make -f dev.mk mega-deploy-bot-service
+	@echo  "${CYAN}[5/5]${NC} ${GREEN}Deploying Document Processor${NC}"
+	make -f dev.mk mega-deploy-doc-processor
+	@echo  "${BOLD}${GREEN}✓ All services deployed successfully!${NC}"
+	@echo  "${BOLD}${PURPLE}========== MEGA DEPLOYMENT COMPLETED ===========${NC}"
+
+# ----------------------
+# Help Target
+# ----------------------
+.PHONY: help
+help:
+	@echo  "${BOLD}${BLUE}===============================================${NC}"
+	@echo  "${BOLD}${BLUE}         Azure Infrastructure Makefile        ${NC}"
+	@echo  "${BOLD}${BLUE}===============================================${NC}"
+	
+	@echo  "${BOLD}Available commands:${NC}"
+	@echo  "${YELLOW}Basic Commands:${NC}"
+	@echo  "  ${GREEN}make -f azure_infra_dev.mk get-release-version${NC}        - Display current release version"
+	@echo  "  ${GREEN}make -f azure_infra_dev.mk acr-login${NC}                  - Login to Azure Container Registry"
+	@echo  "  ${GREEN}make -f azure_infra_dev.mk aks-login${NC}                  - Login to Azure Kubernetes Service"
+	
+	@echo  "\n${YELLOW}Deployment Commands:${NC}"
+	@echo  "  ${GREEN}make -f azure_infra_dev.mk mega-deploy-all${NC}            - Deploy all services"
+	@echo  "  ${GREEN}make -f azure_infra_dev.mk mega-deploy-pushgateway${NC}    - Deploy Pushgateway"
+	@echo  "  ${GREEN}make -f azure_infra_dev.mk mega-deploy-langfuse${NC}       - Deploy Langfuse"
+	@echo  "  ${GREEN}make -f azure_infra_dev.mk az-publish-function${NC}        - Publish Azure Functions"
+	@echo  "  ${GREEN}make -f azure_infra_dev.mk update-vault-secrets${NC}       - Update secrets in Azure Key Vault"
+	@echo  "  ${GREEN}make -f azure_infra_dev.mk mega-deploy-bot-service${NC}    - Deploy bot service"
+	@echo  "  ${GREEN}make -f azure_infra_dev.mk mega-deploy-doc-processor${NC}  - Deploy document processor"
+	
+	@echo  "\n${YELLOW}Testing Commands:${NC}"
+	@echo  "  ${GREEN}make -f azure_infra_dev.mk test-all${NC}                   - Run all tests"
+	@echo  "  ${GREEN}make -f azure_infra_dev.mk test-acr-access${NC}            - Test ACR access"
+	@echo  "  ${GREEN}make -f azure_infra_dev.mk test-aks-access${NC}            - Test AKS access"
+	@echo  "  ${GREEN}make -f azure_infra_dev.mk test-bot-service${NC}           - Test bot service"
+	@echo  "  ${GREEN}make -f azure_infra_dev.mk test-doc-processor${NC}         - Test document processor"
+
+# Add help as default target
+.DEFAULT_GOAL := help

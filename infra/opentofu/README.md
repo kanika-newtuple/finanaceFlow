@@ -1,10 +1,12 @@
-# GENAIDocs Terraform Configuration
+# OpenTofu Configuration
 
-This directory contains Terraform configurations to set up the Azure infrastructure required for the GENAIDocs document processing service.
+This directory contains OpenTofu configurations to set up the Azure infrastructure required for the document processing service. 
+
+> **Note**: This project has migrated from Terraform to OpenTofu. OpenTofu is a drop-in replacement that maintains compatibility with Terraform configurations while remaining open source.
 
 ## Prerequisites
 
-- [Terraform](https://www.terraform.io/downloads.html) (v1.0.0 or newer)
+- [OpenTofu](https://opentofu.org/downloads) (v1.6.0 or newer)
 - Azure CLI installed and logged in (`az login`)
 - Proper Azure permissions to create resources
 
@@ -27,19 +29,19 @@ This directory contains Terraform configurations to set up the Azure infrastruct
 
 ## Usage
 
-Initialize Terraform:
+Initialize OpenTofu:
 ```bash
-terraform init
+tofu init
 ```
 
 Review the execution plan:
 ```bash
-terraform plan
+tofu plan
 ```
 
 Apply the configuration:
 ```bash
-terraform apply
+tofu apply
 ```
 
 ## Resources Created
@@ -114,14 +116,14 @@ Cosmos DB for PostgreSQL metrics are monitored through Azure Monitor and can be 
 To connect to the PostgreSQL database:
 
 ```bash
-psql "host=$(terraform output -raw postgres_server_fqdn) dbname=$(terraform output -raw postgres_database_name) user=$(terraform output -raw postgres_admin_username) password=$(terraform output -raw postgres_admin_password) port=5432 sslmode=require"
+psql "host=$(tofu output -raw postgres_server_fqdn) dbname=$(tofu output -raw postgres_database_name) user=$(tofu output -raw postgres_admin_username) password=$(tofu output -raw postgres_admin_password) port=5432 sslmode=require"
 ```
 
 ## Accessing Grafana
 
-1. After deployment, access the Grafana portal using the endpoint provided in the Terraform output:
+1. After deployment, access the Grafana portal using the endpoint provided in the OpenTofu output:
    ```bash
-   echo "Grafana Endpoint: $(terraform output -raw grafana_endpoint)"
+   echo "Grafana Endpoint: $(tofu output -raw grafana_endpoint)"
    ```
 
 2. Log in with your Azure AD credentials (users in the `grafana_admin_object_ids` list will have admin privileges)
@@ -143,9 +145,9 @@ These alerts will be sent to the configured action group (email notification).
 To configure your AKS cluster to pull images from your ACR:
 
 ```bash
-az aks update -n $(terraform output -raw kubernetes_cluster_name) \
-              -g $(terraform output -raw resource_group_name) \
-              --attach-acr $(terraform output -raw container_registry_name)
+az aks update -n $(tofu output -raw kubernetes_cluster_name) \
+              -g $(tofu output -raw resource_group_name) \
+              --attach-acr $(tofu output -raw container_registry_name)
 ```
 
 ## Custom Grafana Dashboards
@@ -216,7 +218,7 @@ To run and debug functions locally:
 
 ### Deployment
 
-Functions are automatically deployed using Terraform, but you can also deploy manually:
+Functions are automatically deployed using OpenTofu, but you can also deploy manually:
 
 ```bash
 func azure functionapp publish GenAI-document-handler --python
@@ -234,14 +236,14 @@ This Container App Job is designed for processing documents from a queue:
 - **High-performance configuration**: 4 vCPU cores and 8GB memory per replica
 - **Scalable processing**: Supports up to 50 parallel replicas for efficient document processing
 - **Queue-based scaling**: Automatically scales based on Azure Service Bus queue depth
-- **Configurable parameters**: Execution limits, job timeouts, and scaling rules can be adjusted in terraform.tfvars
+- **Configurable parameters**: Execution limits, job timeouts, and scaling rules can be adjusted in terraform.tfvars (OpenTofu uses the same file format)
 
 You can manually trigger a new job execution using the Azure CLI:
 
 ```bash
 az containerapp job start \
-  --name $(terraform output -raw doc_processor_job_name) \
-  --resource-group $(terraform output -raw resource_group_name)
+  --name $(tofu output -raw doc_processor_job_name) \
+  --resource-group $(tofu output -raw resource_group_name)
 ```
 
 ### Integration with Service Bus and Storage
@@ -255,7 +257,7 @@ The Container App Job integrates with:
 
 To destroy all created resources:
 ```bash
-terraform destroy
+tofu destroy
 ```
 
 ## Recommended Next Steps
