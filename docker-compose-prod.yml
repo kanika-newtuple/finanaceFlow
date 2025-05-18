@@ -7,8 +7,8 @@ services:
       dockerfile: ./dockerfiles/api.Dockerfile
     env_file:
         - ./bot_service/src/backend/etc/.env
-    volumes:
-      - ./common:/app/common
+    # volumes:
+    #   - ./common:/app/common
     healthcheck:
       test: curl --fail http://localhost:8081/v1/api/health || exit 1
       interval: 40s
@@ -31,8 +31,8 @@ services:
       dockerfile: ./dockerfiles/ui.Dockerfile
     env_file:
       - ./bot_service/src/frontend/etc/.env
-    volumes:
-      - ./common:/app/common
+    # volumes:
+    #   - ./common:/app/common
     healthcheck:
       test: curl --fail http://localhost:3000 || exit 1
       interval: 40s
