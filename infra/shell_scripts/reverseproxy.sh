@@ -17,7 +17,8 @@ NC="\033[0m" # No Color
 
 # Validate subdomain
 while true; do
-    read -p "Enter subdomain to be used: " subdomain
+    echo -e "${CYAN}Enter subdomain to be used: ${NC}"
+    read subdomain
     if [[ -z "$subdomain" ]]; then
         echo -e "${RED}Error: Subdomain cannot be empty.${NC}"
     elif ! [[ "$subdomain" =~ ^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$ ]]; then
@@ -29,7 +30,8 @@ done
 
 # Validate application port
 while true; do
-    read -p "Enter deployment application port: " application_port
+    echo -e "${CYAN}Enter application port: ${NC}" 
+    read application_port
     if [[ -z "$application_port" ]]; then
         echo -e "${RED}Error: Application port cannot be empty.${NC}"
     elif ! [[ "$application_port" =~ ^[0-9]+$ ]]; then
@@ -43,7 +45,8 @@ done
 
 # Validate SSL certificate confirmation
 while true; do
-    read -p "Assign SSL certificate to subdomain (y/n) using Let's Encrypt ACME: " ssl_cert_confirmation
+    echo -e "${CYAN}Do you want to assign SSL certificate to subdomain using Let's Encrypt ACME? (y/n): ${NC}"
+    read ssl_cert_confirmation
     if [[ "$ssl_cert_confirmation" =~ ^[yYnN]$ ]]; then
         break
     else
@@ -80,7 +83,7 @@ confirmation() {
     echo -e "${BOLD}Further execution will attempt to create the following:${NC}"
     echo -e ""
     echo -e "Review and add addtional reverse proxy rules at                        : ${CYAN}/etc/nginx/conf.d/$subdomain.conf${NC}"
-    echo -e "SSL certificate for ${CYAN}$subdomain${NC} using Let's Encrpyt ACME at : ${CYAN}/etc/letsencrypt/live/$subdomain/fullchain.pem${NC}"
+    echo -e "SSL certificate for ${CYAN}$subdomain${NC} using Let's Encrpyt ACME at : ${CYAN}/etc/letsencrypt/live/$subdomain${NC}"
     echo -e ""
     read -p "Continue ? (Y/N): " confirm
     if [[ "$confirm" =~ ^[yY]$ ]]; then
