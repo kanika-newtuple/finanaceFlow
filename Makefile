@@ -94,6 +94,15 @@ sync-uv-depenencies:
 	pip3 install uv --quiet
 	cd ${GIT_ROOT}/bot_service/src/backend && uv pip compile requirements.txt -o requirements.in
 
+start-celery-worker:
+	@echo "Starting Celery worker...\n"
+	cd ${GIT_ROOT}/bot_service/src/backend && celery -A celery_tasks worker --loglevel=info
+	# /Users/rahulkumar/Newtuple/Newtuple_repos/fantastic-fiesta/bot_service/src/backend/celery_tasks.py
+
+start-celery-flower:
+	@echo "Starting Celery beat...\n"
+	celery --broker='redis://localhost:6379/0' flower
+
 tests:
 	@echo "Running tests...\n"
 	pytest ${GIT_ROOT}/bot_service/src/backend/tests -v 
