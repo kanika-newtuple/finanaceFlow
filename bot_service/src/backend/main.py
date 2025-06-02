@@ -3,6 +3,7 @@ from argparse import ArgumentParser
 import uvicorn
 from auth.manager import AuthManager
 from common.configuration import Configuration
+from common.logger_new import Logger
 from database.manager import DatabaseServiceManager
 from dotenv import load_dotenv
 from fastapi import APIRouter, Depends, FastAPI
@@ -14,6 +15,8 @@ from health.manager import HealthServiceManager
 from LLM.manager import LLMServiceManager
 from metrics.controller import MetricsRestController
 from metrics.manager import MetricsService
+from tasks.controller import TaskRestController
+from tasks.manager import TasksService
 from user.controller import UserRestController
 from user.db_models import UserModelService
 from user.manager import UserServiceManager
@@ -24,16 +27,22 @@ args = parser.parse_args()
 load_dotenv(args.env)
 
 # common services
+
+logger = Logger()
+logger.get_logger().info("Starting BOT service...")
+
 config = Configuration()
 config_env = config.configuration()
 config_ini = config.config_ini()
 app_router = APIRouter()
 
-auth_manager = AuthManager(config)
 
+auth_manager = AuthManager(config)
 health_service_manager = HealthServiceManager()
 health_rest_contoller = HealthRestController(health_service_manager).prepare(app_router)
 
+task_service = TasksService()
+task_rest_controller = TaskRestController(task_service).prepare(app_router)
 
 database_service_manager = DatabaseServiceManager(config)
 llm_service_manager = LLMServiceManager()
@@ -47,10 +56,6 @@ user_rest_controller.prepare(app_router)
 metrics_service_manager = MetricsService()
 metrics_rest_controller = MetricsRestController(metrics_service_manager).prepare(app_router, Depends(user_rest_controller.get_current_username))
 
-from dummy.controller import DummyRestController
-from dummy.manager import DummyService
-
-dummy_rest_controller = DummyRestController(DummyService(llm_service_manager)).prepare(app_router)
 
 app = FastAPI()
 app.add_middleware(GZipMiddleware, minimum_size=1000, compresslevel=5)
