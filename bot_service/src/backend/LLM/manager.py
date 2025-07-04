@@ -1,4 +1,5 @@
 from typing import Any
+import os
 
 import litellm
 import tiktoken
@@ -6,8 +7,17 @@ from common.data_model import LLMProvider
 from common.logger import logger
 from litellm import acompletion, aembedding
 
-litellm.success_callback = ["langfuse"]
-litellm.failure_callback = ["langfuse"]
+# Only enable Langfuse callbacks if the required environment variables are set
+langfuse_public_key = os.environ.get("LANGFUSE_PUBLIC_KEY")
+langfuse_secret_key = os.environ.get("LANGFUSE_SECRET_KEY")
+langfuse_host = os.environ.get("LANGFUSE_HOST", "https://cloud.langfuse.com")
+
+if langfuse_public_key and langfuse_secret_key:
+    litellm.success_callback = ["langfuse"]
+    litellm.failure_callback = ["langfuse"]
+    logger.info("Langfuse callbacks enabled")
+else:
+    logger.info("Langfuse callbacks disabled - missing environment variables")
 
 
 class CommonLLM:
@@ -48,17 +58,56 @@ class LiteLLMService(CommonLLM):
         self.model_name = None
 
     async def completion(self, prompt: str, langfuse_meta_data: dict = {}, **kwargs):
-        response = await acompletion(model=self.model_name, messages=prompt, metadata=langfuse_meta_data, temperature=0, timeout=600, **kwargs)
+        # Set default values if not provided
+        default_params = {
+            "temperature": 0,
+            "timeout": 600
+        }
+        
+        # Update defaults with provided kwargs
+        default_params.update(kwargs)
+        
+        # Only pass metadata if Langfuse is enabled
+        if langfuse_public_key and langfuse_secret_key:
+            default_params["metadata"] = langfuse_meta_data
+        
+        response = await acompletion(
+            model=self.model_name, 
+            messages=prompt, 
+            **default_params
+        )
         return response.choices[0].message.content
 
     async def acompletion(self, prompt: str, langfuse_meta_data: dict = {}, **kwargs):  # noqa: ASYNC900
-        async for stream_resp in await acompletion(model=self.model_name, messages=prompt, stream=True, metadata=langfuse_meta_data, temperature=0, timeout=600, **kwargs):
+        # Set default values if not provided
+        default_params = {
+            "temperature": 0,
+            "timeout": 600
+        }
+        
+        # Update defaults with provided kwargs
+        default_params.update(kwargs)
+        
+        # Only pass metadata if Langfuse is enabled
+        if langfuse_public_key and langfuse_secret_key:
+            default_params["metadata"] = langfuse_meta_data
+        
+        async for stream_resp in await acompletion(
+            model=self.model_name, 
+            messages=prompt, 
+            stream=True, 
+            **default_params
+        ):
             if stream_resp.choices and stream_resp.choices[0].delta.content:
                 token = stream_resp.choices[0].delta.content
                 yield token
 
     async def embed(self, model: str, documents: list[str], langfuse_meta_data: dict = {}, **kwargs):
-        response = await aembedding(model, input=documents,metadata=langfuse_meta_data, **kwargs)
+        # Only pass metadata if Langfuse is enabled
+        if langfuse_public_key and langfuse_secret_key:
+            kwargs["metadata"] = langfuse_meta_data
+            
+        response = await aembedding(model, input=documents, **kwargs)
         return response
 
     def set_client_by_model(self, model_name: str, **kwargs):

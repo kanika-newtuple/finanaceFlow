@@ -3,15 +3,14 @@ import os
 import json
 import logging
 from typing import Dict, Any, List
-import openai
 from datetime import datetime
 import fitz  # PyMuPDF
 from dotenv import load_dotenv
+
+from LLM.manager import LLMServiceManager
+from common.data_model import LLMProvider, LiteLLMModels, LangfuseMetaData
+
 logger = logging.getLogger(__name__)
-openai.api_key = os.getenv("OPENAI_API_KEY")
-print("Loaded key:", openai.api_key)
-import os
-print("🔑 OPENAI_API_KEY is:", repr(os.getenv("OPENAI_API_KEY")))
 
 class PDFProcessor:
     """
@@ -19,11 +18,22 @@ class PDFProcessor:
     """
     
     def __init__(self, openai_api_key: str = None):
-        """Initialize the PDF processor with OpenAI API key"""
-        openai.api_key = os.environ.get("OPENAI_API_KEY")
-        if not openai.api_key:
-            raise ValueError("OpenAI API key must be provided")
-            raise ValueError("OpenAI API key must be provided")
+        """Initialize the PDF processor with LLM service manager"""
+        # Initialize LLM service manager
+        self.llm_service_manager = LLMServiceManager()
+        
+        # Get LLM service with GPT-4o-mini model
+        self.llm_service = self.llm_service_manager.get_service(
+            llm_provider=LLMProvider.lite_llm,
+            model_name=LiteLLMModels.gpt_4o_mini.value
+        )
+        
+        # Set up Langfuse metadata for tracking
+        self.langfuse_metadata = LangfuseMetaData(
+            trace_name="pdf_bill_processing",
+            trace_user_id="system",
+            mask_input=True
+        ).model_dump()
     
     async def extract_text_from_pdf(self, file_path: str) -> str:
         """Extract text content from a PDF file using PyMuPDF"""
@@ -38,7 +48,7 @@ class PDFProcessor:
             raise ValueError(f"Failed to extract text from PDF: {str(e)}")
     
     async def extract_transactions_from_text(self, text_content: str) -> Dict[str, Any]:
-        """Use OpenAI to extract transaction data from text content"""
+        """Use LLM service to extract transaction data from text content"""
         try:
             prompt = f"""
             You are an expert financial document analyzer. Extract comprehensive information from this bill/invoice/statement.
@@ -129,36 +139,31 @@ class PDFProcessor:
             {text_content[:4000]}  # Limit content to avoid token limits
             """
             
-            # Log that we're sending a request to OpenAI
-            logger.info(f"🚀 Sending request to OpenAI with prompt length: {len(prompt)}")
-            logger.info(f"🚀 OpenAI API Key (first 10 chars): {os.environ.get('OPENAI_API_KEY', 'NOT_SET')[:10]}...")
+            # Log that we're sending a request to LLM
+            logger.info(f"🚀 Sending request to LLM with prompt length: {len(prompt)}")
             
-            # For OpenAI client v1.0+
-            client = openai.OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
-            response = client.chat.completions.create(
-                model="gpt-4o-mini",
-                messages=[{"role": "user", "content": prompt}],
+            # Use LLM service to get completion
+            response = await self.llm_service.completion(
+                prompt=[{"role": "user", "content": prompt}],
+                langfuse_meta_data=self.langfuse_metadata,
                 temperature=0.1,
                 max_tokens=2000
             )
             
-            # Parse the JSON response
-            result_text = response.choices[0].message.content
-            
-            # Log the full response from OpenAI
-            logger.info(f"✅ OpenAI response received: {result_text}")
+            # Log the full response from LLM
+            logger.info(f"✅ LLM response received: {response}")
             
             # Clean the response - remove markdown code blocks if present
-            if result_text.startswith("```json"):
+            if response.startswith("```json"):
                 # Remove ```json from start and ``` from end
-                result_text = result_text.replace("```json", "").replace("```", "").strip()
-                logger.info(f"🧹 Cleaned response (removed markdown): {result_text}")
-            elif result_text.startswith("```"):
+                response = response.replace("```json", "").replace("```", "").strip()
+                logger.info(f"🧹 Cleaned response (removed markdown): {response}")
+            elif response.startswith("```"):
                 # Remove ``` from start and end
-                result_text = result_text.replace("```", "").strip()
-                logger.info(f"🧹 Cleaned response (removed markdown): {result_text}")
+                response = response.replace("```", "").strip()
+                logger.info(f"🧹 Cleaned response (removed markdown): {response}")
             
-            result = json.loads(result_text)
+            result = json.loads(response)
             logger.info(f"✅ JSON parsing successful: {result}")
             return result
         except Exception as e:
@@ -177,25 +182,6 @@ class PDFProcessor:
     async def process_pdf_bill(self, file_path: str) -> Dict[str, Any]:
         """Process a PDF bill and extract transaction data"""
         try:
-            # Check if OpenAI API key is set
-            if not openai.api_key:
-                logger.warning("OpenAI API key not set or invalid")
-                return {
-                    "vendor": "Unknown Vendor (No API Key)",
-                    "date": datetime.now().strftime("%Y-%m-%d"),
-                    "total_amount": 0.0,
-                    "bill_id": "Missing API Key",
-                    "file_path": file_path,
-                    "transactions": [
-                        {
-                            "description": "Please set a valid OpenAI API key in .env file",
-                            "quantity": 1,
-                            "unit_price": 0,
-                            "total_price": 0
-                        }
-                    ]
-                }
-            
             # Extract text from PDF
             logger.info(f"Extracting text from PDF: {file_path}")
             text_content = await self.extract_text_from_pdf(file_path)

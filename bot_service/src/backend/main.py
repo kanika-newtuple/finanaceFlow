@@ -11,6 +11,7 @@ from database.db import engine, init_db
 # Import our modules
 from database.db import engine, init_db
 from bills_api import router as bills_router
+from integrations.routes import router as integrations_router
 
 # Configure basic logging
 logging.basicConfig(level=logging.INFO)
@@ -53,6 +54,7 @@ async def health_check():
 # Include routers
 app.include_router(app_router, prefix="/api/v1")
 app.include_router(bills_router, prefix="/api/v1/bills")
+app.include_router(integrations_router, prefix="/api/v1/integrations")
 
 # Root redirect to docs
 @app.get("/")

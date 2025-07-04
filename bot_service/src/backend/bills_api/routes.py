@@ -19,6 +19,7 @@ bill_service = BillService()
 @router.post("/upload", response_model=BillResponse)
 async def upload_bill(
     file: UploadFile = File(...),
+    force: bool = False,
     db: Session = Depends(get_db)
 ):
     """
@@ -38,14 +39,20 @@ async def upload_bill(
             f.write(await file.read())
         
         # Process the bill
-        bill = await bill_service.upload_bill(db, file_path)
+        bill = await bill_service.upload_bill(db, file_path, force)
         return bill
     except ValueError as e:
         logger.error(f"Value error during bill processing: {str(e)}")
         # Clean up uploaded file on error
         if os.path.exists(file_path):
             os.remove(file_path)
-        raise HTTPException(status_code=400, detail=f"Error processing bill data: {str(e)}")
+        
+        # Check if this is a duplicate bill error
+        error_message = str(e)
+        if "Duplicate bill detected" in error_message:
+            raise HTTPException(status_code=409, detail=error_message)
+        else:
+            raise HTTPException(status_code=400, detail=f"Error processing bill data: {error_message}")
     except Exception as e:
         logger.error(f"Unexpected error uploading bill: {str(e)}")
         # Clean up uploaded file on error

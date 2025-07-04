@@ -1,5 +1,5 @@
 from sqlalchemy.orm import Session
-from typing import List, Optional
+from typing import List, Optional, Tuple
 import os
 import logging
 from datetime import datetime
@@ -16,7 +16,30 @@ class BillService:
         """Initialize the bill service"""
         self.pdf_processor = PDFProcessor(openai_api_key)
     
-    async def upload_bill(self, db: Session, file_path: str) -> Bill:
+    def check_duplicate_bill(self, db: Session, bill_data: dict) -> Tuple[bool, Optional[Bill]]:
+        """
+        Check if a bill with the same vendor, bill_id, and total_amount already exists
+        Returns a tuple of (is_duplicate, duplicate_bill)
+        """
+        # Extract key identifying information
+        vendor = bill_data.get("vendor")
+        bill_id = bill_data.get("bill_id")
+        total_amount = bill_data.get("total_amount")
+        
+        if not vendor or not bill_id or not total_amount:
+            # If we don't have enough information to check for duplicates
+            return False, None
+        
+        # Try to find a bill with the same vendor, bill_id, and total amount
+        duplicate_bill = db.query(Bill).filter(
+            Bill.vendor == vendor,
+            Bill.bill_id == bill_id,
+            Bill.total_amount == float(total_amount)
+        ).first()
+        
+        return (duplicate_bill is not None), duplicate_bill
+    
+    async def upload_bill(self, db: Session, file_path: str, force: bool = False) -> Bill:
         """Process a PDF bill and save it to the database with enhanced information"""
         try:
             # Process the PDF using LLM
@@ -35,6 +58,13 @@ class BillService:
             
             if not bill_data.get("total_amount"):
                 logger.warning("⚠️ No total amount extracted, using 0.0")
+            
+            # Check for duplicate bill before proceeding, unless force is True
+            if not force:
+                is_duplicate, duplicate_bill = self.check_duplicate_bill(db, bill_data)
+                if is_duplicate:
+                    logger.warning(f"⚠️ Duplicate bill detected: {duplicate_bill.vendor}, Bill ID: {duplicate_bill.bill_id}")
+                    raise ValueError(f"Duplicate bill detected: This bill from {duplicate_bill.vendor} with ID {duplicate_bill.bill_id} has already been uploaded")
             
             # Helper function to parse dates
             def parse_date(date_str):

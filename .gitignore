@@ -206,3 +206,11 @@ logs/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+
+# Google Sheets Integration - Sensitive credentials
+bot_service/src/backend/integrations/google_credentials.json
+bot_service/src/backend/integrations/token.json
+
+# Excel exports directory
+bot_service/src/backend/exports/
+exports/

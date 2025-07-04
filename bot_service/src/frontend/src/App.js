@@ -41,7 +41,8 @@ import {
   Menu,
   MenuItem,
   Switch,
-  FormControlLabel
+  FormControlLabel,
+  LinearProgress
 } from '@mui/material';
 import { 
   CloudUpload, 
@@ -68,7 +69,10 @@ import {
   ExpandLess,
   PieChart,
   BarChart,
-  Timeline
+  Timeline,
+  TableView,
+  Link,
+  SyncAlt
 } from '@mui/icons-material';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
 import { Line, Bar, Doughnut } from 'react-chartjs-2';
@@ -117,6 +121,7 @@ function App() {
   const [billToDelete, setBillToDelete] = useState(null);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [currentUploadFile, setCurrentUploadFile] = useState('');
+  const [uploadStatuses, setUploadStatuses] = useState({}); // Track upload status for each file
 
   // Create theme
   const theme = createTheme({
@@ -185,7 +190,14 @@ function App() {
         throw new Error(`Error: ${response.status}`);
       }
       const data = await response.json();
-      setBills(data);
+      
+      // Add status to existing bills and sort by latest first
+      const billsWithStatus = data.map(bill => ({
+        ...bill,
+        status: 'processed'
+      })).sort((a, b) => new Date(b.bill_date) - new Date(a.bill_date));
+      
+      setBills(billsWithStatus);
     } catch (error) {
       console.error('Error fetching bills:', error);
       showSnackbar('Failed to load bills', 'error');
@@ -212,19 +224,55 @@ function App() {
     setUploadProgress(0);
     const successfulUploads = [];
     const failedUploads = [];
+    const duplicateBills = [];
+
+    // Create temporary bills for each file being uploaded
+    const tempBills = selectedFiles.map((file, index) => ({
+      id: `temp-${Date.now()}-${index}`,
+      vendor: 'Uploading...',
+      bill_id: file.name,
+      bill_date: new Date().toISOString(),
+      total_amount: 0,
+      document_type: 'PDF',
+      status: 'uploading',
+      isTemp: true,
+      fileName: file.name
+    }));
+
+    // Add temporary bills to the list
+    setBills(prevBills => [...tempBills, ...prevBills]);
 
     try {
       // Process files one by one to avoid overwhelming the server
       for (let i = 0; i < selectedFiles.length; i++) {
         const file = selectedFiles[i];
+        const tempBillId = `temp-${Date.now()}-${i}`;
         setCurrentUploadFile(file.name);
         setUploadProgress(((i) / selectedFiles.length) * 100);
+        
+        // Update status to extracting
+        setBills(prevBills => 
+          prevBills.map(bill => 
+            bill.id === tempBillId 
+              ? { ...bill, status: 'extracting', vendor: 'Extracting data...' }
+              : bill
+          )
+        );
         
         const formData = new FormData();
         formData.append('file', file);
 
         try {
           showSnackbar(`Processing ${file.name} (${i + 1}/${selectedFiles.length})...`, 'info');
+          
+          // Update status to LLM processing
+          setBills(prevBills => 
+            prevBills.map(bill => 
+              bill.id === tempBillId 
+                ? { ...bill, status: 'llm_processing', vendor: 'LLM Processing...' }
+                : bill
+            )
+          );
           
           const response = await fetch(`${API_BASE_URL}/bills/upload`, {
             method: 'POST',
@@ -233,32 +281,85 @@ function App() {
 
           if (!response.ok) {
             const errorData = await response.json();
+            
+            // Handle duplicate bill case specifically
+            if (response.status === 409) {
+              duplicateBills.push({ file: file.name, error: errorData.detail });
+              // Update status to duplicate detected
+              setBills(prevBills => 
+                prevBills.map(bill => 
+                  bill.id === tempBillId 
+                    ? { ...bill, status: 'duplicate', vendor: 'Duplicate Detected', error_details: errorData.detail }
+                    : bill
+                )
+              );
+              // Store the file and formData for potential force upload
+              setSelectedBill({
+                vendor: "Duplicate Bill Detected",
+                bill_id: "",
+                document_date: new Date().toISOString(),
+                total_amount: 0,
+                transactions: [],
+                error_details: errorData.detail,
+                duplicateFile: file,
+                formData: formData,
+                tempBillId: tempBillId
+              });
+              setOpenDialog(true);
+              throw new Error(`Duplicate bill: ${errorData.detail}`);
+            }
+            
+            // Update status to failed
+            setBills(prevBills => 
+              prevBills.map(bill => 
+                bill.id === tempBillId 
+                  ? { ...bill, status: 'failed', vendor: 'Upload Failed', error: errorData.detail }
+                  : bill
+              )
+            );
             throw new Error(errorData.detail || `Error: ${response.status}`);
           }
 
           const data = await response.json();
+          
+          // Update status to processed and replace temp bill with real data
+          setBills(prevBills => 
+            prevBills.map(bill => 
+              bill.id === tempBillId 
+                ? { ...data, status: 'processed' }
+                : bill
+            )
+          );
+          
           successfulUploads.push({ file: file.name, data });
         } catch (error) {
           console.error(`Error uploading ${file.name}:`, error);
           failedUploads.push({ file: file.name, error: error.message });
+          
+          // Update status to failed if not already set
+          setBills(prevBills => 
+            prevBills.map(bill => 
+              bill.id === tempBillId && bill.status !== 'duplicate'
+                ? { ...bill, status: 'failed', vendor: 'Upload Failed', error: error.message }
+                : bill
+            )
+          );
         }
       }
       
       setUploadProgress(100);
 
-      // Update bills list with successful uploads
-      if (successfulUploads.length > 0) {
-        const newBills = successfulUploads.map(upload => upload.data);
-        setBills([...bills, ...newBills]);
-      }
-
-      // Show results
-      if (successfulUploads.length > 0 && failedUploads.length === 0) {
-        showSnackbar(`All ${successfulUploads.length} files processed successfully!`, 'success');
-      } else if (successfulUploads.length > 0 && failedUploads.length > 0) {
-        showSnackbar(`${successfulUploads.length} files processed successfully, ${failedUploads.length} failed`, 'warning');
-      } else {
-        showSnackbar(`All ${failedUploads.length} files failed to process`, 'error');
+      // Show results - only if we don't have a duplicate bill dialog open
+      if (!openDialog) {
+        if (successfulUploads.length > 0 && failedUploads.length === 0) {
+          showSnackbar(`All ${successfulUploads.length} files processed successfully!`, 'success');
+        } else if (duplicateBills.length > 0) {
+          // Dialog is already shown for duplicate bills
+        } else if (successfulUploads.length > 0 && failedUploads.length > 0) {
+          showSnackbar(`${successfulUploads.length} files processed successfully, ${failedUploads.length} failed`, 'warning');
+        } else {
+          showSnackbar(`All ${failedUploads.length} files failed to process`, 'error');
+        }
       }
 
       // Reset selection
@@ -270,6 +371,44 @@ function App() {
       showSnackbar(`Bulk upload failed: ${error.message}`, 'error');
     } finally {
       setUploadLoading(false);
+    }
+  };
+
+  // Get status color for chips
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'processed':
+        return 'success';
+      case 'failed':
+        return 'error';
+      case 'duplicate':
+        return 'warning';
+      case 'llm_processing':
+      case 'extracting':
+      case 'uploading':
+        return 'info';
+      default:
+        return 'default';
+    }
+  };
+
+  // Get status label for chips
+  const getStatusLabel = (status) => {
+    switch (status) {
+      case 'processed':
+        return 'Processed';
+      case 'failed':
+        return 'Failed';
+      case 'duplicate':
+        return 'Duplicate';
+      case 'llm_processing':
+        return 'LLM Processing...';
+      case 'extracting':
+        return 'Extracting...';
+      case 'uploading':
+        return 'Uploading...';
+      default:
+        return 'Unknown';
     }
   };
 
@@ -358,6 +497,76 @@ function App() {
   // Show snackbar notification
   const showSnackbar = (message, severity) => {
     setSnackbar({ open: true, message, severity });
+  };
+
+  // Handle view bill details
+  const handleViewBill = (bill) => {
+    setSelectedBill(bill);
+    setOpenDialog(true);
+  };
+
+  // Handle force upload of duplicate bill
+  const handleForceDuplicateUpload = async (file, formData) => {
+    try {
+      setUploadLoading(true);
+      showSnackbar(`Uploading duplicate bill: ${file.name}...`, 'info');
+      
+      // Update status to uploading
+      if (selectedBill?.tempBillId) {
+        setBills(prevBills => 
+          prevBills.map(bill => 
+            bill.id === selectedBill.tempBillId 
+              ? { ...bill, status: 'uploading', vendor: 'Uploading...' }
+              : bill
+          )
+        );
+      }
+      
+      // Add force parameter to indicate we're knowingly uploading a duplicate
+      const response = await fetch(`${API_BASE_URL}/bills/upload?force=true`, {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || `Error: ${response.status}`);
+      }
+
+      const data = await response.json();
+      
+      // Update status to processed and replace temp bill with real data
+      if (selectedBill?.tempBillId) {
+        setBills(prevBills => 
+          prevBills.map(bill => 
+            bill.id === selectedBill.tempBillId 
+              ? { ...data, status: 'processed' }
+              : bill
+          )
+        );
+      } else {
+        // If no temp bill, add to the beginning of the list
+        setBills(prevBills => [{ ...data, status: 'processed' }, ...prevBills]);
+      }
+      
+      showSnackbar(`Bill uploaded successfully`, 'success');
+    } catch (error) {
+      console.error(`Error force uploading bill: ${error}`);
+      showSnackbar(`Failed to upload bill: ${error.message}`, 'error');
+      
+      // Update status to failed
+      if (selectedBill?.tempBillId) {
+        setBills(prevBills => 
+          prevBills.map(bill => 
+            bill.id === selectedBill.tempBillId 
+              ? { ...bill, status: 'failed', vendor: 'Upload Failed', error: error.message }
+              : bill
+          )
+        );
+      }
+    } finally {
+      setUploadLoading(false);
+    }
   };
 
   // Download bills as CSV
@@ -489,6 +698,213 @@ function App() {
     }
   };
 
+  // Export to Google Sheets
+  const exportToGoogleSheets = async () => {
+    try {
+      setUploadLoading(true);
+      showSnackbar('Exporting to Google Sheets...', 'info');
+
+      const response = await fetch(`${API_BASE_URL}/integrations/export/google-sheets`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          include_transactions: true,
+          include_analytics: true
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || `Error: ${response.status}`);
+      }
+
+      const data = await response.json();
+      
+      // Open the Google Sheet in a new tab
+      window.open(data.spreadsheet_url, '_blank');
+      
+      showSnackbar(`Successfully exported ${data.bills_exported} bills to Google Sheets!`, 'success');
+      
+    } catch (error) {
+      console.error('Error exporting to Google Sheets:', error);
+      showSnackbar(`Google Sheets export failed: ${error.message}`, 'error');
+    } finally {
+      setUploadLoading(false);
+    }
+  };
+
+  // Export to Excel
+  const exportToExcel = async () => {
+    try {
+      setUploadLoading(true);
+      showSnackbar('Generating Excel file...', 'info');
+
+      const response = await fetch(`${API_BASE_URL}/integrations/export/excel`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          include_transactions: true,
+          include_analytics: true
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || `Error: ${response.status}`);
+      }
+
+      const data = await response.json();
+      
+      // Download the Excel file
+      const downloadUrl = `${API_BASE_URL}/integrations/download/${data.filename.split('/').pop()}`;
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.download = data.filename.split('/').pop();
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      showSnackbar(`Excel file generated! ${data.bills_exported} bills exported.`, 'success');
+      
+    } catch (error) {
+      console.error('Error exporting to Excel:', error);
+      showSnackbar(`Excel export failed: ${error.message}`, 'error');
+    } finally {
+      setUploadLoading(false);
+    }
+  };
+
+  // Sync with existing Google Sheet
+  const syncWithGoogleSheet = async () => {
+    const spreadsheetId = prompt('Enter Google Sheets ID (from the URL):');
+    if (!spreadsheetId) return;
+
+    try {
+      setUploadLoading(true);
+      showSnackbar('Syncing with Google Sheets...', 'info');
+
+      const response = await fetch(`${API_BASE_URL}/integrations/sync/google-sheets/${spreadsheetId}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || `Error: ${response.status}`);
+      }
+
+      const data = await response.json();
+      
+      // Open the synced Google Sheet
+      window.open(data.spreadsheet_url, '_blank');
+      
+      showSnackbar(`Successfully synced ${data.bills_synced} bills!`, 'success');
+      
+    } catch (error) {
+      console.error('Error syncing with Google Sheets:', error);
+      showSnackbar(`Sync failed: ${error.message}`, 'error');
+    } finally {
+      setUploadLoading(false);
+    }
+  };
+
+  // Simple CSV export (works with any spreadsheet)
+  const exportSimpleCSV = async () => {
+    try {
+      setUploadLoading(true);
+      showSnackbar('Generating spreadsheet-ready CSV...', 'info');
+
+      const response = await fetch(`${API_BASE_URL}/integrations/export/simple-csv`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || `Error: ${response.status}`);
+      }
+
+      const data = await response.json();
+      
+      // Create and download CSV file
+      const blob = new Blob([data.csv_content], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      link.setAttribute('href', url);
+      link.setAttribute('download', data.filename);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      // Show instructions
+      const instructions = `CSV downloaded! Import to any spreadsheet:
+
+📊 Google Sheets: Go to sheets.google.com → File → Import → Upload CSV
+📈 Excel Online: Go to office.live.com → Excel → Data → From Text/CSV  
+🗂️ Airtable: Go to airtable.com → Create base → Import CSV
+📝 Notion: Create page → Add database → Import CSV
+
+Or simply copy-paste the CSV content!`;
+      
+      showSnackbar('CSV ready for any spreadsheet! Check console for import instructions.', 'success');
+      console.log(instructions);
+      
+    } catch (error) {
+      console.error('Error generating simple CSV:', error);
+      showSnackbar(`CSV export failed: ${error.message}`, 'error');
+    } finally {
+      setUploadLoading(false);
+    }
+  };
+
+  // Copy-paste format
+  const getCopyPasteData = async () => {
+    try {
+      setUploadLoading(true);
+      showSnackbar('Preparing copy-paste data...', 'info');
+
+      const response = await fetch(`${API_BASE_URL}/integrations/export/copy-paste`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || `Error: ${response.status}`);
+      }
+
+      const data = await response.json();
+      
+      // Copy to clipboard
+      try {
+        await navigator.clipboard.writeText(data.tab_separated_content);
+        showSnackbar('Data copied! Paste in any spreadsheet - columns will separate automatically!', 'success');
+      } catch (clipboardError) {
+        // Fallback: show data in console
+        console.log('Copy this data to any spreadsheet:');
+        console.log(data.tab_separated_content);
+        showSnackbar('Data ready! Check console to copy manually.', 'info');
+      }
+      
+    } catch (error) {
+      console.error('Error generating copy-paste data:', error);
+      showSnackbar(`Copy-paste export failed: ${error.message}`, 'error');
+    } finally {
+      setUploadLoading(false);
+    }
+  };
+
   // Handle snackbar close
   const handleSnackbarClose = () => {
     setSnackbar({ ...snackbar, open: false });
@@ -531,11 +947,12 @@ function App() {
     }
   };
 
-  // Filter bills based on search
-  const filteredBills = bills.filter(bill =>
+  // Filter bills based on search term
+  const filteredBills = bills.filter(bill => 
     bill.vendor?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    bill.bill_id?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+    bill.bill_id?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    bill.document_type?.toLowerCase().includes(searchTerm.toLowerCase())
+  ).sort((a, b) => new Date(b.bill_date) - new Date(a.bill_date));
 
   // Dashboard view
   const DashboardView = () => (
@@ -762,6 +1179,25 @@ function App() {
              )}
            </Box>
            
+           {/* Upload Progress */}
+           {uploadLoading && (
+             <Box sx={{ width: '100%', mt: 2 }}>
+               <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                 <Typography variant="body2" color="textSecondary" sx={{ mr: 1 }}>
+                   {currentUploadFile ? `Processing: ${currentUploadFile}` : 'Uploading...'}
+                 </Typography>
+                 <Typography variant="body2" color="primary" sx={{ ml: 'auto' }}>
+                   {Math.round(uploadProgress)}%
+                 </Typography>
+               </Box>
+               <LinearProgress 
+                 variant="determinate" 
+                 value={uploadProgress} 
+                 sx={{ height: 6, borderRadius: 3 }} 
+               />
+             </Box>
+           )}
+           
            {/* Show selected files */}
            {selectedFiles.length > 0 && (
              <Box sx={{ mt: 2 }}>
@@ -815,16 +1251,29 @@ function App() {
               variant="outlined"
               onClick={downloadCSV}
               disabled={bills.length === 0}
+              size="small"
             >
-              Export Bills
+              CSV
+            </Button>
+            <Button 
+              startIcon={<TableView />} 
+              variant="outlined"
+              onClick={exportToGoogleSheets}
+              disabled={bills.length === 0 || uploadLoading}
+              size="small"
+              sx={{ color: '#4285f4', borderColor: '#4285f4' }}
+            >
+              Google Sheets
             </Button>
             <Button 
               startIcon={<GetApp />} 
               variant="outlined"
-              onClick={downloadTransactionsCSV}
-              disabled={bills.length === 0}
+              onClick={exportToExcel}
+              disabled={bills.length === 0 || uploadLoading}
+              size="small"
+              sx={{ color: '#217346', borderColor: '#217346' }}
             >
-              Export Transactions
+              Excel
             </Button>
           </Box>
         </CardContent>
@@ -903,9 +1352,17 @@ function App() {
                         </TableCell>
                         <TableCell>
                           <Chip 
-                            label="Processed" 
+                            label={getStatusLabel(bill.status)}
                             size="small"
-                            color="success"
+                            color={getStatusColor(bill.status)}
+                            variant={bill.status === 'processed' ? 'filled' : 'outlined'}
+                            icon={
+                              bill.status === 'llm_processing' || 
+                              bill.status === 'extracting' || 
+                              bill.status === 'uploading' 
+                                ? <CircularProgress size={16} /> 
+                                : undefined
+                            }
                           />
                         </TableCell>
                         <TableCell>
@@ -916,16 +1373,19 @@ function App() {
                             >
                               {expandedBill === bill.id ? <ExpandLess /> : <ExpandMore />}
                             </IconButton>
-                                                         <IconButton size="small">
-                               <Visibility />
-                             </IconButton>
-                             <IconButton 
-                               size="small" 
-                               color="error"
-                               onClick={() => handleDeleteClick(bill)}
-                             >
-                               <Delete />
-                             </IconButton>
+                            <IconButton 
+                              size="small"
+                              onClick={() => handleViewBill(bill)}
+                            >
+                              <Visibility />
+                            </IconButton>
+                            <IconButton 
+                              size="small" 
+                              color="error"
+                              onClick={() => handleDeleteClick(bill)}
+                            >
+                              <Delete />
+                            </IconButton>
                           </Box>
                         </TableCell>
                       </TableRow>
@@ -1095,24 +1555,44 @@ function App() {
                     <Typography variant="h5" gutterBottom>
                       Analytics & Reports
                     </Typography>
-                    <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-                      <Button 
-                        startIcon={<GetApp />} 
-                        variant="contained"
-                        onClick={downloadCSV}
-                        disabled={bills.length === 0}
-                      >
-                        Export Bills Summary
-                      </Button>
-                      <Button 
-                        startIcon={<GetApp />} 
-                        variant="outlined"
-                        onClick={downloadTransactionsCSV}
-                        disabled={bills.length === 0}
-                      >
-                        Export Detailed Transactions
-                      </Button>
-                    </Box>
+                                         <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+                       <Button 
+                         startIcon={<GetApp />} 
+                         variant="contained"
+                         onClick={exportSimpleCSV}
+                         disabled={bills.length === 0 || uploadLoading}
+                         sx={{ bgcolor: '#00d4aa', '&:hover': { bgcolor: '#00b894' } }}
+                       >
+                         📊 Any Spreadsheet
+                       </Button>
+                       <Button 
+                         startIcon={<Link />} 
+                         variant="outlined"
+                         onClick={getCopyPasteData}
+                         disabled={bills.length === 0 || uploadLoading}
+                       >
+                         📋 Copy & Paste
+                       </Button>
+                       <Button 
+                         startIcon={<TableView />} 
+                         variant="outlined"
+                         onClick={exportToGoogleSheets}
+                         disabled={bills.length === 0 || uploadLoading}
+                         sx={{ color: '#4285f4', borderColor: '#4285f4' }}
+                       >
+                         Google Sheets
+                       </Button>
+                       <Button 
+                         startIcon={<GetApp />} 
+                         variant="outlined"
+                         onClick={exportToExcel}
+                         disabled={bills.length === 0 || uploadLoading}
+                         size="small"
+                         sx={{ color: '#217346', borderColor: '#217346' }}
+                       >
+                         Excel
+                       </Button>
+                     </Box>
                   </Box>
                 </CardContent>
               </Card>
@@ -1409,6 +1889,117 @@ function App() {
              <Button onClick={handleConfirmDelete} color="error" variant="contained">
                Delete
              </Button>
+           </DialogActions>
+         </Dialog>
+
+         {/* Bill Details Dialog */}
+         <Dialog
+           open={openDialog}
+           onClose={() => !uploadLoading && setOpenDialog(false)}
+           maxWidth="md"
+           fullWidth
+         >
+           <DialogTitle>
+             {selectedBill?.error_details ? "Duplicate Bill Warning" : "Bill Details"}
+           </DialogTitle>
+           <DialogContent>
+             {selectedBill?.error_details ? (
+               <Box>
+                 <Alert severity="warning" sx={{ mb: 2 }}>
+                   <Typography variant="subtitle1">
+                     Duplicate bill detected
+                   </Typography>
+                 </Alert>
+                 <Typography variant="body1" gutterBottom>
+                   This bill appears to have already been uploaded:
+                 </Typography>
+                 <Paper variant="outlined" sx={{ p: 2, bgcolor: 'background.default' }}>
+                   <Typography variant="body2" component="pre" sx={{ whiteSpace: 'pre-wrap' }}>
+                     {selectedBill.error_details}
+                   </Typography>
+                 </Paper>
+                 <Typography variant="body1" sx={{ mt: 2 }}>
+                   Do you want to upload it again anyway?
+                 </Typography>
+                 
+                 {/* Upload Progress */}
+                 {uploadLoading && (
+                   <Box sx={{ width: '100%', mt: 3 }}>
+                     <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                       <Typography variant="body2" color="textSecondary">
+                         Uploading duplicate bill...
+                       </Typography>
+                       <CircularProgress size={16} sx={{ ml: 1 }} />
+                     </Box>
+                     <LinearProgress sx={{ height: 6, borderRadius: 3 }} />
+                   </Box>
+                 )}
+               </Box>
+             ) : (
+               <Box>
+                 <Grid container spacing={2}>
+                   <Grid item xs={12} md={6}>
+                     <Typography variant="subtitle1" gutterBottom>
+                       Vendor Information
+                     </Typography>
+                     <Typography variant="body1">
+                       {selectedBill?.vendor}
+                     </Typography>
+                     <Typography variant="body2" color="textSecondary">
+                       {selectedBill?.vendor_address || 'No address available'}
+                     </Typography>
+                     <Typography variant="body2" color="textSecondary">
+                       {selectedBill?.vendor_contact || 'No contact information'}
+                     </Typography>
+                   </Grid>
+                   <Grid item xs={12} md={6}>
+                     <Typography variant="subtitle1" gutterBottom>
+                       Bill Details
+                     </Typography>
+                     <Typography variant="body2">
+                       <strong>Bill ID:</strong> {selectedBill?.bill_id || 'N/A'}
+                     </Typography>
+                     <Typography variant="body2">
+                       <strong>Date:</strong> {selectedBill?.bill_date ? formatDate(selectedBill.bill_date) : 'N/A'}
+                     </Typography>
+                     <Typography variant="body2">
+                       <strong>Due Date:</strong> {selectedBill?.due_date ? formatDate(selectedBill.due_date) : 'N/A'}
+                     </Typography>
+                     <Typography variant="body2">
+                       <strong>Amount:</strong> {selectedBill?.total_amount ? formatCurrency(selectedBill.total_amount) : 'N/A'}
+                     </Typography>
+                   </Grid>
+                 </Grid>
+               </Box>
+             )}
+           </DialogContent>
+           <DialogActions>
+             {selectedBill?.error_details ? (
+               <>
+                 <Button onClick={() => setOpenDialog(false)} color="primary" disabled={uploadLoading}>
+                   Cancel
+                 </Button>
+                 <Button 
+                   onClick={() => {
+                     // Force upload the duplicate bill
+                     if (selectedBill?.duplicateFile && selectedBill?.formData) {
+                       handleForceDuplicateUpload(selectedBill.duplicateFile, selectedBill.formData);
+                     }
+                     setOpenDialog(false);
+                   }} 
+                   color="warning" 
+                   variant="contained"
+                   disabled={uploadLoading}
+                   startIcon={uploadLoading ? <CircularProgress size={20} /> : null}
+                 >
+                   {uploadLoading ? 'Uploading...' : 'Upload Anyway'}
+                 </Button>
+               </>
+             ) : (
+               <Button onClick={() => setOpenDialog(false)}>
+                 Close
+               </Button>
+             )}
            </DialogActions>
          </Dialog>
 
