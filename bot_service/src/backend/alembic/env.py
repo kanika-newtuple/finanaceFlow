@@ -4,7 +4,72 @@ from logging.config import fileConfig
 from alembic import context
 from dotenv import load_dotenv
 from sqlalchemy import engine_from_config, pool
+
+# Import models directly to avoid service import chain
+import sys
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)) + "/..")
+
 from user.db_models import Base as user_base
+
+# Import models directly without going through __init__.py
+from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey, Text
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import relationship
+
+# Create the bills base directly here to avoid import issues
+bills_base = declarative_base()
+
+class Bill(bills_base):
+    """SQLAlchemy model for bills - defined here to avoid import issues"""
+    __tablename__ = "bills"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    
+    # Company Information
+    vendor = Column(String, index=True)
+    vendor_address = Column(Text, nullable=True)
+    vendor_contact = Column(String, nullable=True)
+    recipient_name = Column(String, index=True, nullable=True)
+    recipient_address = Column(Text, nullable=True)
+    
+    # Document Details
+    document_date = Column(DateTime)
+    bill_date = Column(DateTime)  # Keep for backward compatibility
+    document_type = Column(String, nullable=True)
+    bill_id = Column(String, index=True, nullable=True)
+    due_date = Column(DateTime, nullable=True)
+    period_from = Column(DateTime, nullable=True)
+    period_to = Column(DateTime, nullable=True)
+    
+    # Financial Information
+    currency = Column(String, default="USD")
+    total_amount = Column(Float)
+    payment_terms = Column(Text, nullable=True)
+    previous_balance = Column(Float, default=0.0)
+    
+    # File Information
+    file_path = Column(String)
+
+class Transaction(bills_base):
+    """SQLAlchemy model for transactions - defined here to avoid import issues"""
+    __tablename__ = "transactions"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    bill_id = Column(Integer, ForeignKey("bills.id"))
+    
+    # Transaction Details
+    transaction_date = Column(DateTime, nullable=True)
+    description = Column(Text)
+    category = Column(String, nullable=True, index=True)
+    table_section = Column(String, nullable=True)
+    
+    # Pricing Information
+    quantity = Column(Float, nullable=True)
+    unit_price = Column(Float, nullable=True)
+    total_price = Column(Float)
+    
+    # Additional Information
+    notes = Column(Text, nullable=True)
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
@@ -21,7 +86,7 @@ if config.config_file_name is not None:
 # from myapp import mymodel
 # target_metadata = mymodel.Base.metadata
 # target_metadata = None
-target_metadata = [user_base.metadata]
+target_metadata = [user_base.metadata, bills_base.metadata]
 
 # other values from the config, defined by the needs of env.py,
 # can be acquired:
@@ -30,12 +95,12 @@ target_metadata = [user_base.metadata]
 
 
 load_dotenv("./etc/.env")
-url = os.getenv("SQLALCHEMY_DATABASE_MIGRATION_URL")
-config = context.config
 
-# setting up database url
-database_url = url
-config.set_main_option("sqlalchemy.url", database_url)
+# Use the same PostgreSQL configuration as the main app
+DATABASE_URL = "postgresql://root:root@localhost:5433/common"
+
+config = context.config
+config.set_main_option("sqlalchemy.url", DATABASE_URL)
 
 
 def run_migrations_offline() -> None:

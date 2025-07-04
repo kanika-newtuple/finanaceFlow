@@ -1,4 +1,8 @@
-from enum import Enum, StrEnum
+from enum import Enum
+# Backport for Python <3.11
+class StrEnum(str, Enum):
+    pass
+
 from typing import Any, Optional
 
 from pydantic import BaseModel as PydanticBaseModel
@@ -107,12 +111,12 @@ class MongoDBConfiguration(BaseModel):
 class PostgreSQLConfiguration(BaseModel):
     """Represents the PostgreSQL configuration"""
 
-    host: str
-    port: int
     username: str
     password: str
+    host: str
+    port: int
     db: str
-    app_schema: str
+    app_schema: str = "public"
 
 
 class SQLServerConfiguration(BaseModel):
@@ -194,30 +198,16 @@ class AzureAISearchConfiguration(BaseModel):
     semantic_configuration_name: str
 
 
-class Configuration(BaseModel):
-    """Represents the configuration"""
-
-    application_name: str
-    logger_configuration: LoggerConfiguration
-    openai_configuration: OpenAIConfiguration
-    server_configuration: ServerConfiguration
-
-    azureai_configuration: AzureAIConfiguration
-    perplexityai_configuration: PerplexityAIConfiguration
-    anthropicai_configuration: AnthropicAIConfiguration
-    geminiai_configuration: GeminiAIConfiguration
-    api_handler_configuration: APIHandlerConfiguration
-    common_configuration: CommonConfiguration
-    mongodb_configuration: MongoDBConfiguration
+class ConfigurationModel(BaseModel):
     postgresql_configuration: PostgreSQLConfiguration
-    sqlserver_configuration: SQLServerConfiguration
-    sqlite_configuration: SQLiteConfiguration
-    opensearch_configuration: OpenSearchConfiguration
 
-    pinecone_configuration: PineconeConfiguation
 
-    langfuse_configuration: LangfuseConfiguration
-    pocketbase_configuration: PocketBaseConfiguration
+class Configuration:
+    def __init__(self, config_model: ConfigurationModel):
+        self._configuration = config_model
+
+    def configuration(self):
+        return self._configuration
 
 class LangfuseMetaData(BaseModel):
     generation_name: str = None
@@ -302,3 +292,7 @@ class VectorDBModel(ExtendedStrEnum):
 
 
 # endregion
+
+class DBException(Exception):
+    """Base exception for database errors"""
+    pass

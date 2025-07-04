@@ -1,66 +1,98 @@
-# Template Repo
+# Bill Management Application
 
-## Use the Quickstart to start backend & frontend
+A simple web application for uploading, managing, and tracking your bills. Built with FastAPI backend and React frontend.
 
-## With Docker, preferred
-For Linux/MacOS, be careful with the `.env` files being used:
-> - Create network if starting for the first time using `make create-network`
-> - From the root directory run `make start-dev-application` & `make stop-dev-application` to start the application backend & frontend respectively
-> - From the root directory run `make start-services` & `make stop-services` to start & stop common services
+## Features
 
-For Windows, be careful with the `.env` files being used:
-> - From the root directory run `docker compose --project-name bot_main -f docker-compose-main.yml up -d --build` & `docker compose --project-name bot_main -f docker-compose-main.yml down` to start & stop the application backend & frontend respectively
-> - From the root directory run `docker compose --project-name bot_main -f docker-compose-service.yml up -d --build` & `docker compose --project-name bot_main -f docker-compose-service.yml down` to start & stop common services
+- Upload and store bill information
+- Categorize bills
+- Track spending by category
+- Attach bill images or PDFs
+- View all bills in a convenient table format
 
+## Getting Started
 
-**_NOTE : Running `make clean-docker-cache` or `docker buildx prune -a` & `docker builder prune -a` allows your system to be cleaned time to time_**
+### Running with Docker
 
-## With Local resources
->- Create a virtual environment using conda or venv or pipenv, for venv use `python3 -m venv myenv`
->- Activate the virtual environment using `source path/to/venv/myenv/bin/activate` for Linux/macOS & `path\to\venv\Scripts\activate` for Windows
+**For Linux/MacOS:**
+```bash
+# Create Docker networks if starting for the first time
+make create-network
 
-For Linux/MacOS:
-> - From the root directory run `make run-application-backend` to start application backend local
-> - From the root directory run `make run-application-frontend` to start application frontend
+# Start the application (backend & frontend)
+make start-dev-application
 
-For Windows:
-> - Navigate to `./bot_service/src/backend` & install all the dependencies using `pip3 install -r requirements.txt -U`
-> - From the same directory use `python3 main.py -e  "./path/to/.env/file"`
-to start application backend
-> -  Navigate to `./bot_service/src/frontend` & install all the dependencies using `npm install`
-> - From the same directory use `npm start`
+# To stop the application
+make stop-dev-application
+```
 
+**For Windows:**
+```bash
+# Start the application
+docker compose --project-name bot_main -f docker-compose-main.yml up -d --build
+
+# To stop the application
+docker compose --project-name bot_main -f docker-compose-main.yml down
+```
+
+### Running Locally
+
+#### Backend Setup
+
+1. Create a virtual environment:
+   ```bash
+   python3 -m venv venv
+   source venv/bin/activate   # Linux/MacOS
+   venv\Scripts\activate      # Windows
+   ```
+
+2. Navigate to the backend directory:
+   ```bash
+   cd bot_service/src/backend
+   ```
+
+3. Install dependencies:
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+4. Run the backend:
+   ```bash
+   python main.py
+   ```
+   The backend will be available at http://localhost:8081/api/v1
+
+#### Frontend Setup
+
+1. Navigate to the frontend directory:
+   ```bash
+   cd bot_service/src/frontend
+   ```
+
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+
+3. Start the frontend:
+   ```bash
+   npm start
+   ```
+   The frontend will be available at http://localhost:3000
+
+## API Endpoints
+
+- `GET /api/v1/bills` - Get all bills
+- `GET /api/v1/bills/{bill_id}` - Get a specific bill
+- `POST /api/v1/bills` - Create a new bill
+- `DELETE /api/v1/bills/{bill_id}` - Delete a bill
+- `GET /api/v1/health` - Check API health
+
+## Technologies Used
+
+- **Backend:** FastAPI, SQLAlchemy, PostgreSQL
+- **Frontend:** React, Material-UI
 
 ## Reading the docs locally:
 >   For Linux/MacOS:
->   - From root dir run `make docs` & `make deploy-docs` to serve & deploy docs repectively
->
->   For Windows
->   - Use `pip3 install mkdocs-material` to install mkdocs
->   - Use `python3 -m mkdocs serve -a localhost:8001` to start serving documentation locally
->   - Use `mkdocs gh-deploy --force` to deploy the docs to GitHub pages
-
-## Running code quality tools:
->   For Linux/MacOS:
->   - From root dir run `make pre-commit` to run & install pre-commit hooks respectively
->
->   For Windows
->   - Use `pip3 install pre-commit` to install pre-commit hooks & navigate to `./bot_service/`
->   - Use `pre-commit install` & go ahead with regular git workflow upon which these rules will now be run automatically whenever code is committed or use `pre-commit run -a` to run them manually
-
-
-## Running data migration using alembic:
->  - From root dir run `make add-alembic-revision` 
->
->   OR
-> - Keep db migration update to date, navigate to `./bot_service/src/backend` and `alembic revision --autogenerate  -m "Done some foo bar changes in db"`
-> - Use `alembic upgrade head` before conscutive application start to keep db schema updated
-> - Make sure that every model's base is referenced in `./bot_service/src/backend/alembic/env.py` file for alembic to detect changes for.
-
-
-## Keeping dependicies up to date for uv:
->   For Linux/MacOS:
->   - From root run `make sync-uv-depenencies`
->
->   For Windows
->   - Add new dependencies in `./bot_service/src/backend/requirements.txt` &  update dependencies by navigating to `./bot_service/src/backend` & using `uv pip compile requirements.txt -o requirements.in`
+>   - From root dir run `make docs` & `

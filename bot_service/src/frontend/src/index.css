@@ -1,0 +1,336 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background: #0d1117;
+  overflow-x: hidden;
+}
+
+code {
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
+    monospace;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+/* Dark mode scrollbar for webkit browsers */
+.dark-theme ::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.dark-theme ::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+/* Light mode scrollbar for webkit browsers */
+.light-theme ::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.light-theme ::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.3);
+}
+
+/* Smooth transitions for all elements */
+* {
+  transition: all 0.2s ease-in-out;
+}
+
+/* Loading animations */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideIn {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(0); }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+.fade-in {
+  animation: fadeIn 0.3s ease-out;
+}
+
+.slide-in {
+  animation: slideIn 0.3s ease-out;
+}
+
+.pulse {
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+/* Card hover effects */
+.MuiCard-root {
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1) !important;
+}
+
+.MuiCard-root:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15) !important;
+}
+
+/* Button improvements */
+.MuiButton-root {
+  transition: all 0.2s ease-in-out !important;
+}
+
+.MuiButton-contained:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 15px rgba(0, 212, 170, 0.3) !important;
+}
+
+/* Table improvements */
+.MuiTableRow-root:hover {
+  background-color: rgba(0, 212, 170, 0.05) !important;
+  transition: background-color 0.2s ease-in-out;
+}
+
+/* Custom gradient backgrounds for dark theme */
+.gradient-bg-primary {
+  background: linear-gradient(135deg, #00d4aa 0%, #00b894 100%);
+}
+
+.gradient-bg-secondary {
+  background: linear-gradient(135deg, #ff6b6b 0%, #e55656 100%);
+}
+
+.gradient-bg-info {
+  background: linear-gradient(135deg, #45b7d1 0%, #3498db 100%);
+}
+
+.gradient-bg-warning {
+  background: linear-gradient(135deg, #f9ca24 0%, #f0932b 100%);
+}
+
+/* Chart containers */
+.chart-container {
+  position: relative;
+  height: 300px;
+  width: 100%;
+}
+
+/* Notification badges */
+.notification-badge {
+  background: linear-gradient(135deg, #ff6b6b 0%, #e55656 100%);
+  animation: pulse 2s infinite;
+}
+
+/* Custom input styles */
+.MuiTextField-root .MuiOutlinedInput-root {
+  transition: all 0.2s ease-in-out;
+}
+
+.MuiTextField-root .MuiOutlinedInput-root:hover {
+  box-shadow: 0 2px 8px rgba(0, 212, 170, 0.15);
+}
+
+.MuiTextField-root .MuiOutlinedInput-root.Mui-focused {
+  box-shadow: 0 4px 12px rgba(0, 212, 170, 0.25);
+}
+
+/* Tabs styling */
+.MuiTabs-root {
+  background: rgba(255, 255, 255, 0.02);
+  backdrop-filter: blur(10px);
+}
+
+.MuiTab-root {
+  transition: all 0.2s ease-in-out;
+}
+
+.MuiTab-root:hover {
+  background: rgba(0, 212, 170, 0.1);
+}
+
+/* App bar styling */
+.MuiAppBar-root {
+  backdrop-filter: blur(20px);
+  background: rgba(22, 27, 34, 0.9) !important;
+}
+
+/* Chip styling */
+.MuiChip-root {
+  transition: all 0.2s ease-in-out;
+}
+
+.MuiChip-root:hover {
+  transform: scale(1.05);
+}
+
+/* Progress indicators */
+.MuiCircularProgress-root {
+  color: #00d4aa !important;
+}
+
+.MuiLinearProgress-root {
+  background-color: rgba(0, 212, 170, 0.1) !important;
+}
+
+.MuiLinearProgress-bar {
+  background-color: #00d4aa !important;
+}
+
+/* Skeleton loading animation */
+@keyframes skeleton-loading {
+  0% {
+    background-position: -200px 0;
+  }
+  100% {
+    background-position: calc(200px + 100%) 0;
+  }
+}
+
+.skeleton {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200px 100%;
+  animation: skeleton-loading 1.5s infinite;
+}
+
+/* Dark theme skeleton */
+.dark-theme .skeleton {
+  background: linear-gradient(90deg, #2a2a2a 25%, #3a3a3a 50%, #2a2a2a 75%);
+  background-size: 200px 100%;
+}
+
+/* Success/Error states */
+.success-state {
+  color: #00d4aa !important;
+}
+
+.error-state {
+  color: #ff6b6b !important;
+}
+
+.warning-state {
+  color: #f9ca24 !important;
+}
+
+/* Mobile responsiveness */
+@media (max-width: 768px) {
+  .MuiContainer-root {
+    padding: 8px !important;
+  }
+  
+  .MuiCard-root {
+    margin-bottom: 16px !important;
+  }
+  
+  .MuiTypography-h4 {
+    font-size: 1.5rem !important;
+  }
+  
+  .MuiTypography-h6 {
+    font-size: 1.1rem !important;
+  }
+}
+
+/* Print styles */
+@media print {
+  .MuiAppBar-root,
+  .MuiTabs-root,
+  .no-print {
+    display: none !important;
+  }
+  
+  .MuiCard-root {
+    box-shadow: none !important;
+    border: 1px solid #ddd !important;
+  }
+}
+
+/* Accessibility improvements */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Focus indicators */
+.MuiButton-root:focus-visible {
+  outline: 2px solid #00d4aa;
+  outline-offset: 2px;
+}
+
+.MuiIconButton-root:focus-visible {
+  outline: 2px solid #00d4aa;
+  outline-offset: 2px;
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .MuiCard-root {
+    border: 2px solid currentColor;
+  }
+  
+  .MuiButton-contained {
+    border: 2px solid currentColor;
+  }
+}
+
+/* Custom utility classes */
+.text-truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.shadow-soft {
+  box-shadow: 0 2px 15px rgba(0, 0, 0, 0.08);
+}
+
+.shadow-medium {
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
+}
+
+.shadow-strong {
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.16);
+}
+
+.border-radius-soft {
+  border-radius: 8px;
+}
+
+.border-radius-medium {
+  border-radius: 12px;
+}
+
+.border-radius-strong {
+  border-radius: 16px;
+}

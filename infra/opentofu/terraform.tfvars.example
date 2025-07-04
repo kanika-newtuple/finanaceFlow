@@ -39,7 +39,7 @@ postgres_storage_mb     = 131072
 # Azure Functions Configuration
 function_sku = "P1v2"
 enable_function_vnet_integration = true
-openai_api_key = "your-openai-api-key-here" # Change before use
+
 
 # Grafana & Prometheus Configuration
 grafana_public_access = false

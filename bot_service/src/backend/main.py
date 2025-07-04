@@ -1,65 +1,32 @@
 from argparse import ArgumentParser
-
+import os
 import uvicorn
-from auth.manager import AuthManager
-from common.configuration import Configuration
-from common.logger_new import Logger
-from database.manager import DatabaseServiceManager
-from dotenv import load_dotenv
-from fastapi import APIRouter, Depends, FastAPI
+from fastapi import FastAPI, APIRouter
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.middleware.gzip import GZipMiddleware
-from fastapi.middleware.httpsredirect import HTTPSRedirectMiddleware
-from health.controller import HealthRestController
-from health.manager import HealthServiceManager
-from LLM.manager import LLMServiceManager
-from metrics.controller import MetricsRestController
-from metrics.manager import MetricsService
-from tasks.controller import TaskRestController
-from tasks.manager import TasksService
-from user.controller import UserRestController
-from user.db_models import UserModelService
-from user.manager import UserServiceManager
+from fastapi.responses import JSONResponse
+import sqlalchemy as sa
+from dotenv import load_dotenv
+import logging
+from database.db import engine, init_db
+# Import our modules
+from database.db import engine, init_db
+from bills_api import router as bills_router
 
-parser = ArgumentParser(description="Runs the BOT service")
+# Configure basic logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+# Parse command line arguments
+parser = ArgumentParser(description="Bills Upload Service")
 parser.add_argument("-e", "--env", help="Path to .env file", default="./etc/.env")
 args = parser.parse_args()
 load_dotenv(args.env)
 
-# common services
-
-logger = Logger()
-logger.get_logger().info("Starting BOT service...")
-
-config = Configuration()
-config_env = config.configuration()
-config_ini = config.config_ini()
+# Create FastAPI app
+app = FastAPI(title="Bills Upload Service")
 app_router = APIRouter()
 
-
-auth_manager = AuthManager(config)
-health_service_manager = HealthServiceManager()
-health_rest_contoller = HealthRestController(health_service_manager).prepare(app_router)
-
-task_service = TasksService()
-task_rest_controller = TaskRestController(task_service).prepare(app_router)
-
-database_service_manager = DatabaseServiceManager(config)
-llm_service_manager = LLMServiceManager()
-
-
-user_db_model_service = UserModelService(database_service_manager)
-user_service_manager = UserServiceManager(user_db_model_service, config)
-user_rest_controller = UserRestController(user_service_manager, database_service_manager)
-user_rest_controller.prepare(app_router)
-
-metrics_service_manager = MetricsService()
-metrics_rest_controller = MetricsRestController(metrics_service_manager).prepare(app_router, Depends(user_rest_controller.get_current_username))
-
-
-app = FastAPI()
-app.add_middleware(GZipMiddleware, minimum_size=1000, compresslevel=5)
-# app.add_middleware(HTTPSRedirectMiddleware)
+# Configure CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -68,7 +35,35 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(app_router, prefix="/v1/api")
+# Health check endpoint
+@app_router.get("/health")
+async def health_check():
+    try:
+        # Check database connection
+        with engine.connect() as connection:
+            connection.execute(sa.text("SELECT 1"))
+        return {"status": "healthy", "database": "connected"}
+    except Exception as e:
+        logger.error(f"Health check failed: {str(e)}")
+        return JSONResponse(
+            status_code=500,
+            content={"status": "unhealthy", "database": "disconnected", "error": str(e)}
+        )
+
+# Include routers
+app.include_router(app_router, prefix="/api/v1")
+app.include_router(bills_router, prefix="/api/v1/bills")
+
+# Root redirect to docs
+@app.get("/")
+async def root():
+    return {"message": "Welcome to Bills Upload Service API", "docs_url": "/docs"}
 
 if __name__ == "__main__":
-    uvicorn.run("main:app", host=config_env.server_configuration.host, timeout_keep_alive=600, port=int(config_env.server_configuration.port), reload=True)
+    # Initialize database
+    init_db()
+    
+    # Run server
+    host = os.getenv("HOST", "0.0.0.0")
+    port = int(os.getenv("PORT", "8081"))
+    uvicorn.run("main:app", host=host, port=port, reload=True)
